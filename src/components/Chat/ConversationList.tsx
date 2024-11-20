@@ -58,38 +58,33 @@ export default function ConversationList({
         <ScrollArea className="h-[calc(100vh-16rem)] mt-4">
           {conversations.map((conv) => (
             <div
-              key={conv.id}
-              className={`p-3 rounded-lg cursor-pointer ${
-                selectedConversation?.id === conv.id ? "bg-[#fadfc4]" : ""
-              }`}
-              onClick={() => onSelectConversation(conv)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <HeartPulseIcon className="h-5 w-5 text-black" />
-                  {editingConversationId === conv.id ? (
-                    <Input
-                      value={editingTitle}
-                      onChange={(e) => setEditingTitle(e.target.value)}
-                      onBlur={saveConversationTitle}
-                      onKeyPress={(e) =>
-                        e.key === "Enter" && saveConversationTitle()
-                      }
-                    />
-                  ) : (
-                    <h3 className="ml-3">{conv.name}</h3>
-                  )}
-                </div>
-                {editingConversationId !== conv.id && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => startEditingConversation(conv)}
-                  >
-                    <EditIcon className="h-4 w-4" />
-                  </Button>
+            key={conv.id}
+            className={`p-3 rounded-lg cursor-pointer bg-[#fff] hover:bg-[#3bcaa7] transition-colors ${
+              selectedConversation?.id === conv.id ? "bg-[#fadfc4]" : ""
+            }`}
+            onClick={() => onSelectConversation(conv)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <HeartPulseIcon className="h-5 w-5 text-black" />
+                {editingConversationId === conv.id ? (
+                  <Input
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onBlur={saveConversationTitle}
+                    onKeyPress={(e) => e.key === "Enter" && saveConversationTitle()}
+                  />
+                ) : (
+                  <h3 className="ml-3">{conv.name}</h3>
                 )}
               </div>
+              {editingConversationId !== conv.id && (
+                <Button variant="ghost" onClick={() => startEditingConversation(conv)}>
+                  <EditIcon className="h-4 w-4" />
+                </Button>
+              )}
             </div>
+          </div>
           ))}
         </ScrollArea>
       </div>

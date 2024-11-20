@@ -162,7 +162,7 @@ const RegisterMedicoForm = () => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="w-full h-[50vh] overflow-auto"
+        className="w-full h-[50vh] overflow-auto p-4"
       >
         <div className="space-y-2 flex flex-col gap-y-4">
           <FormField
