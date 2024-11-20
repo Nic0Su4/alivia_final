@@ -28,11 +28,14 @@ import BrainLoadingScreen from "@/components/ui/loading";
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
   const [input, setInput] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [recommendedDoctor, setRecommendedDoctor] = useState<Doctor | null>(null);
+  const [recommendedDoctor, setRecommendedDoctor] = useState<Doctor | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   const user = useUserStore((state) => state.user) as User | null;
@@ -94,8 +97,6 @@ export default function Chat() {
 
   const handleSend = async () => {
     if (!input.trim() || !user || !selectedConversation) return;
-
-    const messageId = crypto.randomUUID();
     const userMessage: Message = {
       id: crypto.randomUUID(),
       content: input,
@@ -103,11 +104,12 @@ export default function Chat() {
       sender: "user",
     };
 
+    const messageId = crypto.randomUUID();
+
     setMessages((prevMessages) => [...prevMessages, userMessage]);
 
-    let botReplyContent = "";
-
     try {
+      let botReplyContent = "";
       const history = messages.map((msg) => ({
         role: msg.sender === "user" ? "user" : "assistant",
         content: msg.content,
@@ -128,14 +130,12 @@ export default function Chat() {
         history,
         (chunk) => {
           botReplyContent += chunk;
-
           setMessages((prevMessages) => {
-            const messagesWithoutCurrrentBot = prevMessages.filter(
+            const messagesWithoutCurrentBot = prevMessages.filter(
               (msg) => msg.id !== messageId
             );
-
             return [
-              ...messagesWithoutCurrrentBot,
+              ...messagesWithoutCurrentBot,
               {
                 id: messageId,
                 content: botReplyContent,
@@ -193,7 +193,8 @@ export default function Chat() {
           ...messagesWithoutError,
           {
             id: messageId,
-            content: "Error al generar la respuesta. Por favor, intenta nuevamente.",
+            content:
+              "Error al generar la respuesta. Por favor, intenta nuevamente.",
             createdAt: Timestamp.now(),
             sender: "bot",
           },

@@ -37,14 +37,7 @@ export const addMessage = async (
   conversation: Conversation,
   message: Message
 ): Promise<Conversation> => {
-  const updatedMessages = [...conversation.messages, message];
-
-  const updatedConversation = {
-    ...conversation,
-    messages: updatedMessages,
-    updatedAt: Timestamp.now(),
-  };
-
+  // Obtén la conversación más reciente desde Firestore
   const conversationRef = doc(
     db,
     "users",
@@ -52,6 +45,22 @@ export const addMessage = async (
     "conversations",
     conversation.id
   );
+  const snapshot = await getDoc(conversationRef);
+
+  let currentMessages: Message[] = [];
+  if (snapshot.exists()) {
+    currentMessages = (snapshot.data().messages as Message[]) || [];
+  }
+
+  // Combina los mensajes existentes con el nuevo mensaje
+  const updatedMessages = [...currentMessages, message];
+
+  const updatedConversation = {
+    ...conversation,
+    messages: updatedMessages,
+    updatedAt: Timestamp.now(),
+  };
+
   await updateDoc(conversationRef, {
     messages: updatedMessages,
     updatedAt: updatedConversation.updatedAt,
