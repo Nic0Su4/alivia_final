@@ -7,6 +7,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  runTransaction,
   setDoc,
   Timestamp,
   updateDoc,
@@ -37,7 +38,6 @@ export const addMessage = async (
   conversation: Conversation,
   message: Message
 ): Promise<Conversation> => {
-  // Obtén la conversación más reciente desde Firestore
   const conversationRef = doc(
     db,
     "users",
@@ -45,25 +45,31 @@ export const addMessage = async (
     "conversations",
     conversation.id
   );
-  const snapshot = await getDoc(conversationRef);
 
-  let currentMessages: Message[] = [];
-  if (snapshot.exists()) {
-    currentMessages = (snapshot.data().messages as Message[]) || [];
-  }
+  const updatedConversation = await runTransaction(db, async (transaction) => {
+    const conversationSnapshot = await transaction.get(conversationRef);
 
-  // Combina los mensajes existentes con el nuevo mensaje
-  const updatedMessages = [...currentMessages, message];
+    const currentMessages: Message[] = conversationSnapshot.exists()
+      ? (conversationSnapshot.data().messages as Message[]) || []
+      : [];
 
-  const updatedConversation = {
-    ...conversation,
-    messages: updatedMessages,
-    updatedAt: Timestamp.now(),
-  };
+    // Add new message to existing messages
+    const updatedMessages = [...currentMessages, message];
 
-  await updateDoc(conversationRef, {
-    messages: updatedMessages,
-    updatedAt: updatedConversation.updatedAt,
+    // Prepare updated conversation object
+    const newConversationData = {
+      ...conversation,
+      messages: updatedMessages,
+      updatedAt: Timestamp.now(),
+    };
+
+    // Update the document within the transaction
+    transaction.update(conversationRef, {
+      messages: updatedMessages,
+      updatedAt: newConversationData.updatedAt,
+    });
+
+    return newConversationData;
   });
 
   return updatedConversation;
