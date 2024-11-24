@@ -120,7 +120,8 @@ export const getUserConversation = async (
 export const editConversation = async (
   userId: string,
   conversation: Conversation,
-  newName: string
+  newName?: string,
+  newStatus?: "open" | "closed"
 ): Promise<Conversation> => {
   const conversationRef = doc(
     db,
@@ -129,16 +130,21 @@ export const editConversation = async (
     "conversations",
     conversation.id
   );
-  await updateDoc(conversationRef, {
-    name: newName,
-    updatedAt: Timestamp.now(),
-  });
 
-  return {
+  const updatedConversation = {
     ...conversation,
-    name: newName,
+    name: newName || conversation.name,
+    status: newStatus || conversation.status,
     updatedAt: Timestamp.now(),
   };
+
+  await updateDoc(conversationRef, {
+    name: updatedConversation.name,
+    status: updatedConversation.status,
+    updatedAt: updatedConversation.updatedAt,
+  });
+
+  return updatedConversation;
 };
 
 export const deleteConversation = async (
@@ -178,6 +184,7 @@ export const addRecommendation = async (
   await updateDoc(conversationRef, {
     recommendedDoctorId: doctorId,
     updatedAt: updatedConversation.updatedAt,
+    status: "closed",
   });
 
   return updatedConversation;

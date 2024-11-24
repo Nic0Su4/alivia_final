@@ -34,3 +34,22 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Doctor Dashboard
+
+1. Último paciente consultado
+2. Total de pacientes por semana (7 días antes)
+3. Listado de los últimos 10 pacientes
+4. Porcentaje de casos recomendados que contactaron al doctor (si se registra)?
+5. Historial de pacientes recomendados con opción de filtrar por fecha o tipo de consulta?
+6. Posibilidad de marcar un caso como atendido o pendiente.?
+7. PERFIL: Permitir visualizar y modificar información básica y Vista de Usuario al momento de recomendar
+
+## Paciente
+
+1. Dashboard
+2. Tiempo en horas o minutos consultando el chat
+3. Cantidad de consultas realizadas (por especialidad)
+4. Médico más recomendado según sus síntomas o consultas previas
+5. Perfil
+6. Poder modificar la mayoría de sus atributos
