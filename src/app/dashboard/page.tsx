@@ -26,7 +26,6 @@ import WellcomeNew from "@/components/ui/WellcomeScreen";
 import BrainLoadingScreen from "@/components/ui/loading";
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
@@ -81,22 +80,97 @@ export default function Chat() {
     }
   }, [user, setUser]);
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (selectedConversation) {
-        const conversation = await getUserConversation(
-          user!.uid,
-          selectedConversation.id
-        );
-        setMessages(conversation?.messages || []);
-      }
-    };
+  const handleBotResponse = async (
+    input: string,
+    messageId: string
+  ): Promise<string> => {
+    let botReplyContent = "";
 
-    fetchMessages();
-  }, [selectedConversation, user]);
+    const history =
+      selectedConversation?.messages.map((msg) => ({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.content,
+      })) || [];
+
+    setSelectedConversation((prev) =>
+      prev
+        ? {
+            ...prev,
+            messages: [
+              ...prev.messages,
+              {
+                id: messageId,
+                content: "",
+                createdAt: Timestamp.now(),
+                sender: "bot",
+              },
+            ],
+          }
+        : prev
+    );
+
+    await enviarMensaje(
+      input,
+      history,
+      (chunk) => {
+        botReplyContent += chunk; // Construye la respuesta en tiempo real
+        updateBotMessageContent(messageId, botReplyContent);
+      },
+      async (doctor) => {
+        if (doctor) {
+          await handleDoctorRecommendation(doctor);
+        }
+      }
+    );
+
+    return botReplyContent; // Respuesta completa del bot
+  };
+
+  const updateMessages = (newMessages: Message[]) => {
+    setSelectedConversation((prev) =>
+      prev ? { ...prev, messages: newMessages } : prev
+    );
+  };
+
+  const updateBotMessageContent = (messageId: string, content: string) => {
+    if (!selectedConversation) return;
+
+    setSelectedConversation((prev) =>
+      prev
+        ? {
+            ...prev,
+            messages: prev.messages.map((msg) =>
+              msg.id === messageId ? { ...msg, content } : msg
+            ),
+          }
+        : prev
+    );
+  };
+
+  const handleDoctorRecommendation = async (doctor: Doctor) => {
+    setRecommendedDoctor(doctor);
+
+    if (doctor && selectedConversation) {
+      await addRecommendation(user!.uid, selectedConversation, doctor.uid);
+
+      // Actualiza estados de conversación
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === selectedConversation.id
+            ? { ...conv, recommendedDoctorId: doctor.uid }
+            : conv
+        )
+      );
+
+      setSelectedConversation((prev) =>
+        prev ? { ...prev, recommendedDoctorId: doctor.uid } : prev
+      );
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || !user || !selectedConversation) return;
+
     const userMessage: Message = {
       id: crypto.randomUUID(),
       content: input,
@@ -104,105 +178,63 @@ export default function Chat() {
       sender: "user",
     };
 
-    const messageId = crypto.randomUUID();
+    const botMessageId = crypto.randomUUID(); // Mensaje del bot en preparación
 
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    updateMessages([...selectedConversation.messages, userMessage]);
 
     try {
-      let botReplyContent = "";
-      const history = messages.map((msg) => ({
-        role: msg.sender === "user" ? "user" : "assistant",
-        content: msg.content,
-      }));
-
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: messageId,
-          content: "",
-          createdAt: Timestamp.now(),
-          sender: "bot",
-        },
-      ]);
-
-      await enviarMensaje(
-        input,
-        history,
-        (chunk) => {
-          botReplyContent += chunk;
-          setMessages((prevMessages) => {
-            const messagesWithoutCurrentBot = prevMessages.filter(
-              (msg) => msg.id !== messageId
-            );
-            return [
-              ...messagesWithoutCurrentBot,
-              {
-                id: messageId,
-                content: botReplyContent,
-                createdAt: Timestamp.now(),
-                sender: "bot",
-              },
-            ];
-          });
-        },
-        (doctor) => {
-          setRecommendedDoctor(doctor);
-          if (doctor) {
-            addRecommendation(user.uid, selectedConversation, doctor.uid);
-            setConversations((prev: Conversation[]) =>
-              prev.map((conv: Conversation) =>
-                conv.id === selectedConversation.id
-                  ? { ...conv, recommendedDoctorId: doctor.uid }
-                  : conv
-              )
-            );
-            setSelectedConversation((prev) =>
-              prev ? { ...prev, recommendedDoctorId: doctor.uid } : prev
-            );
-          }
-        }
-      );
-
-      const updatedConversation = await addMessage(
+      const updatedConversationWithUserMessage = await addMessage(
         user.uid,
         selectedConversation,
         userMessage
       );
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === updatedConversationWithUserMessage.id
+            ? updatedConversationWithUserMessage
+            : conv
+        )
+      );
 
+      // Inicia lógica para generar respuesta
+      const botReplyContent = await handleBotResponse(input, botMessageId);
+
+      // Crea mensaje final del bot
       const finalBotMessage: Message = {
-        id: messageId,
+        id: botMessageId,
         content: botReplyContent,
         createdAt: Timestamp.now(),
         sender: "bot",
       };
 
-      await addMessage(user.uid, updatedConversation, finalBotMessage);
+      // Agrega el mensaje del usuario a la base de datos
+      const updatedConversationWithBotMessage = await addMessage(
+        user.uid,
+        updatedConversationWithUserMessage,
+        finalBotMessage
+      );
 
       setConversations((prev) =>
         prev.map((conv) =>
-          conv.id === updatedConversation.id ? updatedConversation : conv
+          conv.id === updatedConversationWithBotMessage.id
+            ? updatedConversationWithBotMessage
+            : conv
         )
       );
     } catch (error) {
-      console.error("Error al generar la respuesta del bot:", error);
-      setMessages((prevMessages) => {
-        const messagesWithoutError = prevMessages.filter(
-          (msg) => msg.id !== messageId
-        );
-        return [
-          ...messagesWithoutError,
-          {
-            id: messageId,
-            content:
-              "Error al generar la respuesta. Por favor, intenta nuevamente.",
-            createdAt: Timestamp.now(),
-            sender: "bot",
-          },
-        ];
-      });
+      console.error("Error al enviar el mensaje:", error);
+      updateMessages([
+        ...selectedConversation!.messages,
+        {
+          id: botMessageId,
+          content: "Error al procesar tu mensaje. Intenta nuevamente.",
+          createdAt: Timestamp.now(),
+          sender: "bot",
+        },
+      ]);
     }
 
-    setInput("");
+    setInput(""); // Limpia la entrada
   };
 
   const handleSelectConversation = async (conversation: Conversation) => {
@@ -210,7 +242,6 @@ export default function Chat() {
       user!.uid,
       conversation.id
     );
-    setMessages(fetchedConversation?.messages || []);
     setSelectedConversation(fetchedConversation);
 
     const doctor = fetchedConversation?.recommendedDoctorId
@@ -219,14 +250,13 @@ export default function Chat() {
 
     setRecommendedDoctor(doctor);
 
-    const conversationHistory = fetchedConversation?.messages.map(
-      (message) => ({
-        role: message.sender === "user" ? "user" : "assistant",
-        content: message.content,
-      })
+    iniciarChat(
+      fetchedConversation?.messages.map((msg) => ({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.content,
+      })) || []
     );
 
-    iniciarChat(conversationHistory ? conversationHistory : []);
     if (isMobile) setIsSidebarOpen(false);
   };
 
@@ -238,12 +268,7 @@ export default function Chat() {
     );
 
     setConversations((prev) => [...prev, newConversation]);
-    setMessages([]);
     setSelectedConversation(newConversation);
-    setUser({
-      ...user,
-      conversations: [...conversations, newConversation],
-    });
     iniciarChat([]);
     if (isMobile) setIsSidebarOpen(false);
   };
@@ -297,7 +322,7 @@ export default function Chat() {
 
         {selectedConversation ? (
           <>
-            <MessageList messages={messages} />
+            <MessageList messages={selectedConversation.messages} />
             <MessageInput
               onSend={handleSend}
               input={input}

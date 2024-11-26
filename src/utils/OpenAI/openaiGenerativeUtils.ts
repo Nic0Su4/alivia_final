@@ -4,6 +4,8 @@ import { getSpecialties } from "../specialtiesUtils";
 import { Doctor } from "../types";
 import openai from "./openaiClient";
 
+//SE DEFINE PARA ENVIAR MENSJE AL BOT
+
 export const enviarMensaje = async (
   mensaje: string,
   history: any[] = [],

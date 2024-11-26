@@ -7,6 +7,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  runTransaction,
   setDoc,
   Timestamp,
   updateDoc,
@@ -25,6 +26,7 @@ export const createConversation = async (
     updatedAt: Timestamp.now(),
     messages: [],
     status: "open",
+    recommendedDoctorId: null,
   };
 
   await setDoc(doc(userConversationsRef, newConversation.id), newConversation);
@@ -37,7 +39,6 @@ export const addMessage = async (
   conversation: Conversation,
   message: Message
 ): Promise<Conversation> => {
-  // Obtén la conversación más reciente desde Firestore
   const conversationRef = doc(
     db,
     "users",
@@ -45,26 +46,39 @@ export const addMessage = async (
     "conversations",
     conversation.id
   );
-  const snapshot = await getDoc(conversationRef);
 
-  let currentMessages: Message[] = [];
-  if (snapshot.exists()) {
-    currentMessages = (snapshot.data().messages as Message[]) || [];
-  }
+  const updatedConversation = await runTransaction(db, async (transaction) => {
+    const conversationSnapshot = await transaction.get(conversationRef);
 
-  // Combina los mensajes existentes con el nuevo mensaje
-  const updatedMessages = [...currentMessages, message];
+    const currentMessages: Message[] = conversationSnapshot.exists()
+      ? (conversationSnapshot.data().messages as Message[]) || []
+      : [];
 
-  const updatedConversation = {
-    ...conversation,
-    messages: updatedMessages,
-    updatedAt: Timestamp.now(),
-  };
+    // Add new message to existing messages
+    const updatedMessages = [...currentMessages, message];
 
-  await updateDoc(conversationRef, {
-    messages: updatedMessages,
-    updatedAt: updatedConversation.updatedAt,
-  });
+    // Prepare updated conversation object
+    const newConversationData = {
+      ...conversation,
+      messages: updatedMessages,
+      updatedAt: Timestamp.now(),
+    };
+
+    // Update the document within the transaction
+    transaction.update(conversationRef, {
+      messages: updatedMessages,
+      updatedAt: newConversationData.updatedAt,
+    });
+
+    return newConversationData;
+  })
+    .then((result) => {
+      return result;
+    })
+    .catch((error) => {
+      console.error("Error al agregar el mensaje:", error);
+      return conversation;
+    });
 
   return updatedConversation;
 };
@@ -100,13 +114,13 @@ export const getUserConversation = async (
     if (conversationDoc.exists()) {
       const conversationData = conversationDoc.data() as Conversation;
 
-      return conversationData || null; // Retornar la conversación o null si no se encuentra
+      return conversationData || null; // Retornar la conversaci贸n o null si no se encuentra
     } else {
       console.log("Usuario no encontrado.");
       return null;
     }
   } catch (error) {
-    console.error("Error al obtener los mensajes de la conversación:", error);
+    console.error("Error al obtener los mensajes de la conversaci贸n:", error);
     return null; // Retornar null en caso de error
   }
 };
@@ -154,25 +168,28 @@ export const addRecommendation = async (
   userId: string,
   conversation: Conversation,
   doctorId: string
-): Promise<Conversation> => {
-  const conversationRef = doc(
-    db,
-    "users",
-    userId,
-    "conversations",
-    conversation.id
-  );
+): Promise<void> => {
+  try {
+    const conversationRef = doc(
+      db,
+      "users",
+      userId,
+      "conversations",
+      conversation.id
+    );
 
-  const updatedConversation = {
-    ...conversation,
-    recommendedDoctorId: doctorId,
-    updatedAt: Timestamp.now(),
-  };
+    await runTransaction(db, async (transaction) => {
+      const conversationDoc = await transaction.get(conversationRef);
+      if (!conversationDoc.exists()) {
+        throw new Error("La conversaci贸n no existe.");
+      }
 
-  await updateDoc(conversationRef, {
-    recommendedDoctorId: doctorId,
-    updatedAt: updatedConversation.updatedAt,
-  });
-
-  return updatedConversation;
+      transaction.update(conversationRef, {
+        recommendedDoctorId: doctorId,
+        updatedAt: Timestamp.now(),
+      });
+    });
+  } catch (error) {
+    console.error("Error al agregar la recomendaci贸n:", error);
+  }
 };

@@ -3,16 +3,15 @@
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 import { Input } from "@/components/ui/input"
 import { BarChart, Calendar, Users, Activity, Search, Bell, Settings, LogOut, User2, User, Key } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter } from "next/navigation";
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from '@/components/ui/table'
 import Link from 'next/link'
-import { db } from '@/firebase/config'
 
 
-export default function PanelDoctor() {
+export default function HistoryDoctor() {
 
   const router = useRouter();
 
@@ -21,20 +20,21 @@ export default function PanelDoctor() {
     router.push("/");
   };
 
+  const [dateFilter, setDateFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const pacientes10 = [
-    { id: 1, patient: "Carlos Asto Gomez", date: "2024-11-26", time: "09:00" },
-    { id: 2, patient: "Jesus Castillo Vidal", date: "2024-11-26", time: "10:30" },
-    { id: 3, patient: "Ana Martínez Rosado", date: "2024-11-26", time: "11:45" },
-    { id: 4, patient: "Carlos Rodríguez Vazquez", date: "2024-11-26", time: "14:00" },
-    { id: 5, patient: "Laura Sánchez Mamani", date: "2024-11-26", time: "15:30" },
-    { id: 6, patient: "Pedro Gómez Bolaños", date: "2024-11-27", time: "09:15" },
-    { id: 7, patient: "Sofia Hernández Gutierrez", date: "2024-11-27", time: "10:45" },
-    { id: 8, patient: "Diego Torres ", date: "2024-11-27", time: "12:00" },
-    { id: 9, patient: "Valentina Díaz", date: "2024-11-27", time: "14:30" },
-    { id: 10, patient: "Javier López", date: "2024-11-27", time: "16:00" },
+  const recommendedPatients = [
+    { id: 1, patient: "Elena Ramírez", date: "2024-11-25", type: "Consulta General", status: "Atendido" },
+    { id: 2, patient: "Roberto Fernández", date: "2024-11-25", type: "Seguimiento", status: "Pendiente" },
+    { id: 3, patient: "Carmen Ortiz", date: "2024-11-24", type: "Examen Físico", status: "Atendido" },
+    { id: 4, patient: "Miguel Ángel Castro", date: "2024-11-24", type: "Consulta General", status: "Cancelado" },
+    { id: 5, patient: "Isabel Vargas", date: "2024-11-23", type: "Vacunación", status: "Atendido" },
   ]
+
+  const filteredPatients = recommendedPatients.filter(patient => {
+    if (dateFilter !== 'all' && patient.date !== dateFilter) return false;
+    return true;
+  });
 
 
   return (
@@ -47,12 +47,15 @@ export default function PanelDoctor() {
         <nav className="mt-8">
           <Button variant="ghost" className="w-full justify-start text-gray-600 hover:text-[#49deb8] hover:bg-[#e6faf5]">
             <BarChart className="mr-2 h-5 w-5" />
-            Dashboard
+            <Link href={"/panel-doctor"}>
+
+              Dashboard
+            </Link>
           </Button>
           <Button variant="ghost" className="w-full justify-start text-gray-600 hover:text-[#49deb8] hover:bg-[#e6faf5]">
             <Calendar className="mr-2 h-5 w-5" />
             <Link href={"/history-doctor"}>
-              Historial
+                Historial
             </Link>
           </Button>
           <Button variant="ghost" className="w-full justify-start text-gray-600 hover:text-[#49deb8] hover:bg-[#e6faf5]">
@@ -140,28 +143,44 @@ export default function PanelDoctor() {
         <div className="mt-8">
           <Card>
             <CardHeader>
-              <CardTitle>Últimos 10 Pacientes Atendidos</CardTitle>
+              <CardTitle>Historial de Pacientes Recomendados</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="flex space-x-4 mb-4">
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar por fecha" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las fechas</SelectItem>
+                    <SelectItem value="2024-11-25">25/11/2024</SelectItem>
+                    <SelectItem value="2024-11-24">24/11/2024</SelectItem>
+                    <SelectItem value="2024-11-23">23/11/2024</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Paciente</TableHead>
                     <TableHead>Fecha</TableHead>
-                    <TableHead>Hora</TableHead>
-                    <TableHead>Acciones</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Estado</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pacientes10.map((appointment) => (
-                    <TableRow key={appointment.id}>
-                      <TableCell className="font-medium">{appointment.patient}</TableCell>
-                      <TableCell>{appointment.date}</TableCell>
-                      <TableCell>{appointment.time}</TableCell>
+                  {filteredPatients.map((patient) => (
+                    <TableRow key={patient.id}>
+                      <TableCell className="font-medium">{patient.patient}</TableCell>
+                      <TableCell>{patient.date}</TableCell>
+                      <TableCell>{patient.type}</TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm" className="text-[#49deb8] border-[#49deb8] hover:bg-[#e6faf5]">
-                          Ver detalles
-                        </Button>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold
+                          ${patient.status === 'Atendido' ? 'bg-green-100 text-green-800' : 
+                            patient.status === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-red-100 text-red-800'}`}>
+                          {patient.status}
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))}

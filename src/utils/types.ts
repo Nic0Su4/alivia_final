@@ -1,5 +1,8 @@
 import { Timestamp } from "firebase/firestore";
 
+
+ // MODELOS O ENTIDADES
+ 
 export type Message = {
   id: string;
   content: string;
@@ -14,7 +17,7 @@ export type Conversation = {
   updatedAt: Timestamp;
   messages: Message[];
   status: "open" | "closed";
-  recommendedDoctorId?: string;
+  recommendedDoctorId: string | null;
 };
 
 export type User = {
