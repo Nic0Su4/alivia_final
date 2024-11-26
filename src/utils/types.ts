@@ -1,8 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
+// MODELOS O ENTIDADES
 
- // MODELOS O ENTIDADES
- 
 export type Message = {
   id: string;
   content: string;

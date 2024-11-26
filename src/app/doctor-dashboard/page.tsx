@@ -78,13 +78,15 @@ export default function WelcomePage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.1, duration: 0.5 }}
             >
-              <Button
-                size="lg"
-                className="bg-[#49deb8] hover:bg-[#4fb198] text-white"
-              >
-                <Link href={"/panel-doctor"}>Ir al Dashboard</Link>
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              <Link href={"/panel-doctor/dashboard"}>
+                <Button
+                  size="lg"
+                  className="bg-[#49deb8] hover:bg-[#4fb198] text-white"
+                >
+                  Ir al Dashboard
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
             </motion.div>
           </CardFooter>
         </Card>

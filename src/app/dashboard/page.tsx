@@ -152,18 +152,21 @@ export default function Chat() {
 
     if (doctor && selectedConversation) {
       await addRecommendation(user!.uid, selectedConversation, doctor.uid);
+      editConversation(user!.uid, selectedConversation, undefined, "closed");
 
       // Actualiza estados de conversación
       setConversations((prev) =>
         prev.map((conv) =>
           conv.id === selectedConversation.id
-            ? { ...conv, recommendedDoctorId: doctor.uid }
+            ? { ...conv, recommendedDoctorId: doctor.uid, status: "closed" }
             : conv
         )
       );
 
       setSelectedConversation((prev) =>
-        prev ? { ...prev, recommendedDoctorId: doctor.uid } : prev
+        prev
+          ? { ...prev, recommendedDoctorId: doctor.uid, status: "closed" }
+          : prev
       );
     }
   };
