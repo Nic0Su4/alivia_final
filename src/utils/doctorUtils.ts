@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   collection,
   doc,
@@ -29,8 +30,8 @@ export const fetchAllDoctors = async (): Promise<Doctor[]> => {
         email: data.email,
         workplace: data.workplace,
         contactNumber: data.contactNumber,
-        createdAt: data.createdAt.toDate(), // Conversión a Date
-        updatedAt: data.updatedAt.toDate(), // Conversión a Date
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
       };
     });
   } catch (error) {
@@ -65,8 +66,8 @@ export const fetchDoctorsBySpecialty = async (
         email: data.email,
         workplace: data.workplace,
         contactNumber: data.contactNumber,
-        createdAt: data.createdAt.toDate(),
-        updatedAt: data.updatedAt.toDate(),
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
       };
     });
   } catch (error) {
@@ -97,8 +98,8 @@ export const getDoctorById = async (doctorId: string): Promise<Doctor> => {
       email: data.email,
       workplace: data.workplace,
       contactNumber: data.contactNumber,
-      createdAt: data.createdAt.toDate(),
-      updatedAt: data.updatedAt.toDate(),
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
     };
   } catch (error) {
     console.error("Error al obtener el doctor por id:", error);
