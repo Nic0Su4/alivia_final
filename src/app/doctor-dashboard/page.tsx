@@ -1,19 +1,23 @@
-"use client"
+"use client";
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import { Doctor } from "@/utils/types";
-import { DoctorStore, useDoctorStore } from "@/store/doctor";
+import { useDoctorStore } from "@/store/doctor";
 import Image from "next/image";
-import logoDoctor from "../../imgs/Captura de pantalla 2024-11-20 115110.png"
+import logoDoctor from "../../imgs/Captura de pantalla 2024-11-20 115110.png";
 import Link from "next/link";
 
 export default function WelcomePage() {
-
   const doctor = useDoctorStore((state) => state.doctor) as Doctor | null;
-  const setDoctor = useDoctorStore((state) => state.setDoctor);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-teal-100 p-4">
@@ -31,7 +35,7 @@ export default function WelcomePage() {
               transition={{ delay: 0.5, duration: 0.6 }}
             >
               <CardTitle className="text-3xl font-bold text-[#49deb8]">
-                Bienvenido a Alivia Doctor
+                Bienvenido a AlivIA Doctor
               </CardTitle>
             </motion.div>
           </CardHeader>
@@ -42,13 +46,16 @@ export default function WelcomePage() {
               transition={{ delay: 0.7, duration: 0.6 }}
               className="space-y-4 text-center md:text-left"
             >
-              <h2 className="text-2xl font-semibold text-gray-800">Dr. {doctor?.lastName}</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Dr. {doctor?.lastName}
+              </h2>
               <p className="text-lg text-gray-600">
                 Gracias por elegir trabajar con nosotros
               </p>
               <p className="text-gray-600">
-                Estamos emocionados de tenerle a bordo. Su experiencia y dedicación serán fundamentales para brindar
-                una atención excepcional a nuestros pacientes.
+                Estamos emocionados de tenerle a bordo. Su experiencia y
+                dedicación serán fundamentales para brindar una atención
+                excepcional a nuestros pacientes.
               </p>
             </motion.div>
             <motion.div
@@ -71,10 +78,11 @@ export default function WelcomePage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.1, duration: 0.5 }}
             >
-              <Button size="lg" className="bg-[#49deb8] hover:bg-[#4fb198] text-white">
-                <Link href={"/panel-doctor"}>
-                    Ir al Dashboard
-                </Link>
+              <Button
+                size="lg"
+                className="bg-[#49deb8] hover:bg-[#4fb198] text-white"
+              >
+                <Link href={"/panel-doctor"}>Ir al Dashboard</Link>
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </motion.div>
