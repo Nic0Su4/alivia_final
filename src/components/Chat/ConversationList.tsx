@@ -86,6 +86,7 @@ export default function ConversationList({
                       onKeyPress={(e) =>
                         e.key === "Enter" && saveConversationTitle()
                       }
+                      className="text-black"
                     />
                   ) : (
                     <h3

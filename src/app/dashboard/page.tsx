@@ -265,9 +265,19 @@ export default function Chat() {
 
   const handleNewConversation = async () => {
     if (!user) return;
+
+    const actualDate = new Date();
+
+    const spanishDate = actualDate.toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
     const newConversation = await createConversation(
       user.uid,
-      "Nueva consulta"
+      `Consulta ${spanishDate}`
     );
 
     setConversations((prev) => [...prev, newConversation]);

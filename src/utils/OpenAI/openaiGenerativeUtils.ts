@@ -34,6 +34,7 @@ export const enviarMensaje = async (
       - Recuerda a los usuarios que deben consultar a un profesional de la salud
       - Solo incluye RECOMENDACIÓN DE ESPECIALIDAD cuando estés seguro de la especialidad necesaria
       - La recomendación debe ir en la última línea de tu respuesta
+      - Hacer preguntas una por una, para no sobrecargar de preguntas al usuario, y no hostigarlo o hacer que se olvide de responder ciertas preguntas si son preguntadas todas en el mismo mensaje, trata de preguntar puntualmente y la pregunta que te permita obtener más información, pero solo una por mensaje.
       
       En caso te pregunten otra cosa, responde amablemente pero recuérdales que tu función principal es ayudar con diagnósticos preliminares.`,
     },
@@ -125,6 +126,7 @@ export const iniciarChat = async (conversationHistory: any[] = []) => {
       - Recuerda a los usuarios que deben consultar a un profesional de la salud
       - Solo incluye RECOMENDACIÓN DE ESPECIALIDAD cuando estés seguro de la especialidad necesaria
       - La recomendación debe ir en la última línea de tu respuesta
+      - Hacer preguntas una por una, para no sobrecargar de preguntas al usuario, y no hostigarlo o hacer que se olvide responder ciertas preguntas si son preguntadas todas en el mismo mensaje, trata de preguntar puntualmente y la pregunta qte permita obtener más información, pero solo una por mensaje.
       
       En caso te pregunten otra cosa, responde amablemente pero recuérdales que tu función principal es ayudar con diagnósticos preliminares.`,
   };
