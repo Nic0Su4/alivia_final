@@ -291,7 +291,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen bg-white relative">
+    <div className="flex min-h-[100dvh] bg-white relative">
       {isSidebarOpen && (
         <div
           className={`${
@@ -346,7 +346,7 @@ export default function Chat() {
             />
           </>
         ) : (
-          <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+          <div className="flex items-center justify-center min-h-[calc(100dvh-4rem)]">
             <WellcomeNew onNewConversation={handleNewConversation} />
           </div>
         )}
