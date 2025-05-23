@@ -53,7 +53,7 @@ export default function MessageInput({
   }, [selectedConversation, setRecommendedDoctor]);
 
   return (
-    <div className=" flex items-center h-[8vh] mx-4">
+    <div className=" flex items-center h-[8dvh] mx-4">
       <Input
         value={input}
         onChange={(e) => setInput(e.target.value)}

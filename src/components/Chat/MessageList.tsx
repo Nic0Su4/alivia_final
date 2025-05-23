@@ -20,7 +20,7 @@ export default function MessageList({ messages }: MessageListProps) {
   return (
     <div
       ref={scrollContainerRef}
-      className="h-[82vh] mx-4 pt-8 overflow-y-auto"
+      className="min-h-[cacl(92dvh-4rem)] mx-4 pt-8 overflow-y-auto"
     >
       {messages.length === 0 && (
         <p className="text-center text-gray-500">
