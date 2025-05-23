@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import { Contact, Phone } from "lucide-react";
+import { Contact, Phone, Send } from "lucide-react";
 import { useEffect } from "react";
 import { getDoctorById } from "@/utils/doctorUtils";
 
@@ -38,12 +38,6 @@ export default function MessageInput({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSend();
-    }
-  };
-
   useEffect(() => {
     if (selectedConversation?.recommendedDoctorId) {
       getDoctorById(selectedConversation.recommendedDoctorId).then((doctor) => {
@@ -53,27 +47,33 @@ export default function MessageInput({
   }, [selectedConversation, setRecommendedDoctor]);
 
   return (
-    <div className=" flex items-center h-[8dvh] mx-4">
-      <Input
+    <div className="flex items-center mx-4">
+      <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKeyDown}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
         placeholder={`${
           selectedConversation?.status === "open"
             ? "Escribe tu mensaje..."
             : "Doctor recomendado, chat cerrado"
         }`}
-        className="flex-1"
+        className="flex-1 resize-none overflow-y-auto rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         disabled={selectedConversation?.status === "closed"}
+        rows={3}
       />
 
       <div className="flex items-center gap-3">
         <Button
           onClick={handleSend}
-          className="ml-2"
+          className="ml-2 p-2"
           disabled={selectedConversation?.status === "closed"}
         >
-          Enviar
+          <Send className="h-6 w-6" />
         </Button>
         {selectedConversation?.recommendedDoctorId && recommendedDoctor && (
           <Dialog>
