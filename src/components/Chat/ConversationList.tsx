@@ -49,7 +49,7 @@ export default function ConversationList({
   };
 
   return (
-    <aside className="w-80 bg-white p-6 shadow-lg h-screen flex flex-col justify-between">
+    <aside className="mt-16 w-72 bg-white p-6 shadow-lg h-[calc(100vh-4rem)] flex flex-col justify-between">
       <div>
         <Button className="w-full" onClick={onNewConversation}>
           <PlusIcon className="mr-2" />

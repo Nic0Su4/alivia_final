@@ -54,10 +54,10 @@ export default function Chat() {
   useEffect(() => {
     if (!selectedConversation) {
       setIsSidebarOpen(false);
-    } else {
+    } else if (!isMobile) {
       setIsSidebarOpen(true);
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, isMobile]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -346,7 +346,7 @@ export default function Chat() {
             />
           </>
         ) : (
-          <div className="p-8 flex items-center justify-center h-screen">
+          <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
             <WellcomeNew onNewConversation={handleNewConversation} />
           </div>
         )}
