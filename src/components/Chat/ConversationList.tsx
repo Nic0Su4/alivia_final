@@ -49,13 +49,13 @@ export default function ConversationList({
   };
 
   return (
-    <aside className="mt-16 w-72 bg-white p-6 shadow-lg h-[calc(100vh-4rem)] flex flex-col justify-between">
+    <aside className="w-72 bg-white p-6 shadow-lg h-[calc(100dvh)] flex flex-col justify-between">
       <div>
         <Button className="w-full" onClick={onNewConversation}>
           <PlusIcon className="mr-2" />
           Nueva consulta
         </Button>
-        <ScrollArea className="h-[calc(100vh-16rem)] mt-4">
+        <ScrollArea className="h-[calc(100dvh-10rem)] mt-4 border border-black rounded-lg">
           {conversations.map((conv) => (
             <div
               key={conv.id}

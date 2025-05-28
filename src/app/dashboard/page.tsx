@@ -13,7 +13,7 @@ import {
   getUserConversation,
   getUserConversations,
 } from "@/utils/conversationUtils";
-import { Conversation, Doctor, Message, User } from "@/utils/types";
+import { Conversation, Doctor, Message, Specialty, User } from "@/utils/types";
 import { useUserStore } from "@/store/user";
 import { redirect } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
@@ -52,11 +52,17 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
-    if (!selectedConversation) {
-      setIsSidebarOpen(false);
-    } else if (!isMobile) {
+    // Solo ajustamos el sidebar automáticamente en dispositivos móviles
+    // o cuando se selecciona una conversación en dispositivos de escritorio
+    if (!isMobile) {
+      // En dispositivos de escritorio, mantener el sidebar abierto
+      // incluso cuando no hay conversación seleccionada
       setIsSidebarOpen(true);
+    } else if (selectedConversation) {
+      // En móviles, cerrar el sidebar cuando se selecciona una conversación
+      setIsSidebarOpen(false);
     }
+    // Ya no cerramos el sidebar cuando selectedConversation es null
   }, [selectedConversation, isMobile]);
 
   useEffect(() => {
@@ -82,7 +88,8 @@ export default function Chat() {
 
   const handleBotResponse = async (
     input: string,
-    messageId: string
+    messageId: string,
+    specialty?: Specialty | null
   ): Promise<string> => {
     let botReplyContent = "";
 
@@ -120,7 +127,8 @@ export default function Chat() {
         if (doctor) {
           await handleDoctorRecommendation(doctor);
         }
-      }
+      },
+      specialty
     );
 
     return botReplyContent; // Respuesta completa del bot
@@ -171,12 +179,12 @@ export default function Chat() {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || !user || !selectedConversation) return;
+  const handleSend = async (message: string, specialty?: Specialty | null) => {
+    if (!message.trim() || !user || !selectedConversation) return;
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
-      content: input,
+      content: message,
       createdAt: Timestamp.now(),
       sender: "user",
     };
@@ -200,7 +208,11 @@ export default function Chat() {
       );
 
       // Inicia lógica para generar respuesta
-      const botReplyContent = await handleBotResponse(input, botMessageId);
+      const botReplyContent = await handleBotResponse(
+        message,
+        botMessageId,
+        specialty
+      );
 
       // Crea mensaje final del bot
       const finalBotMessage: Message = {
@@ -237,7 +249,7 @@ export default function Chat() {
       ]);
     }
 
-    setInput(""); // Limpia la entrada
+    // Input ya se limpia en el componente MessageInput
   };
 
   const handleSelectConversation = async (conversation: Conversation) => {
@@ -337,7 +349,10 @@ export default function Chat() {
           <>
             <MessageList messages={selectedConversation.messages} />
             <MessageInput
-              onSend={handleSend}
+              onSend={(message, specialty) => {
+                setInput(""); // Limpiar el input después de enviar
+                handleSend(message, specialty);
+              }}
               input={input}
               setInput={setInput}
               selectedConversation={selectedConversation}
