@@ -73,7 +73,7 @@ export default function MessageInput({
       {/* Selector de especialidad */}
       {selectedConversation?.status === "open" && (
         <div className="flex items-center gap-2 mb-2">
-          <Stethoscope className="h-5 w-5 text-gray-500" />
+          <Stethoscope className="h-5 w-5 text-gray-700" />
           <Select
             value={selectedSpecialty?.id || "none"}
             onValueChange={(value) => {
