@@ -51,9 +51,9 @@ export default function ConversationList({
   return (
     <aside className="w-72 bg-white p-6 shadow-lg h-[calc(100dvh)] flex flex-col justify-between">
       <div>
-        <Button className="w-full" onClick={onNewConversation}>
+        <Button className="w-full bg-[#3cc7a7]" onClick={onNewConversation}>
           <PlusIcon className="mr-2" />
-          Nueva consulta
+          <span className="font-bold">Nueva consulta</span>
         </Button>
         <ScrollArea className="h-[calc(100dvh-10rem)] mt-4 border border-black rounded-lg">
           {conversations.map((conv) => (
@@ -121,8 +121,8 @@ export default function ConversationList({
         </ScrollArea>
       </div>
 
-      <Button className="w-full mt-4 " onClick={handleLogout}>
-        Cerrar sesión
+      <Button className="w-full mt-4 bg-[#3cc7a7]" onClick={handleLogout}>
+        <span className="font-bold">Cerrar Sesión</span>
       </Button>
     </aside>
   );
