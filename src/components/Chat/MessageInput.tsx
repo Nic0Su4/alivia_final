@@ -69,7 +69,7 @@ export default function MessageInput({
   }, [selectedConversation, setRecommendedDoctor]);
 
   return (
-    <div className="flex flex-col p-3 gap-2 bg-[#49deb9]">
+    <div className="flex flex-col p-4 gap-2 bg-[#49deb9] h-40">
       {/* Selector de especialidad */}
       {selectedConversation?.status === "open" && (
         <div className="flex items-center gap-2 mb-2">
