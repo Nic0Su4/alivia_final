@@ -32,7 +32,7 @@ export const enviarMensaje = async (
   - Si un usuario menciona temas off-topic, recuérdales tu función principal
   - Proporciona información relevante
   - Recuerda a los usuarios que deben consultar a un profesional de la salud
-  - Solo incluye RECOMENDACIÓN DE ESPECIALIDAD cuando estés seguro de la especialidad necesaria
+  - Solo incluye RECOMENDACIÓN DE ESPECIALIDAD cuando estés seguro de la especialidad necesaria, y recuerda no usar espacio luego de los 2 puntos, para que el regex lo reconozca correctemente.
   - La recomendación debe ir en la última línea de tu respuesta
   - Hacer preguntas una por una, para no sobrecargar de preguntas al usuario, y no hostigarlo o hacer que se olvide de responder ciertas preguntas si son preguntadas todas en el mismo mensaje, trata de preguntar puntualmente y la pregunta que te permita obtener más información, pero solo una por mensaje.
   
@@ -85,12 +85,12 @@ export const enviarMensaje = async (
 
     // Verificamos si hay una recomendación de doctor en la respuesta
     const recommendationMatch = fullResponse.match(
-      /RECOMENDACIÓN DE ESPECIALIDAD:\s*([\wÁÉÍÓÚáéíóúñÑüÜ\s]+)/u
+      /RECOMENDACIÓN DE ESPECIALIDAD:\s*([\wÁÉÍÓÚáéíóúñÑüÜ]+)(?:\s+POSIBLES DIAGNÓSTICOS:|\s|$)/u
     );
 
     // Verificamos si hay diagnósticos posibles en la respuesta
     const diagnosisMatch = fullResponse.match(
-      /POSIBLES DIAGNÓSTICOS:\s*([\wÁÉÍÓÚáéíóúñÑüÜ\s,\.\-\(\)]+)/u
+      /POSIBLES DIAGNÓSTICOS:\s*([\wÁÉÍÓÚáéíóúñÑüÜ\s,\.\-\(\)]+)(?:\s|$)/u
     );
 
     // Si hay diagnósticos, los resaltamos en la respuesta
@@ -100,8 +100,9 @@ export const enviarMensaje = async (
       );
     }
 
-    if (recommendationMatch && onDoctorRecommendation && !selectedSpecialty) {
+    if (recommendationMatch && onDoctorRecommendation) {
       const specialtyName = recommendationMatch[1].trim();
+      console.log(recommendationMatch);
 
       const specialty = specialties.find(
         (s) => s.name.toLowerCase() === specialtyName.toLowerCase()
