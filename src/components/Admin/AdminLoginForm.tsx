@@ -90,6 +90,7 @@ const AdminLoginForm = () => {
           message: "No tienes permisos de administrador",
         });
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       form.setError("email", {
         type: "manual",
