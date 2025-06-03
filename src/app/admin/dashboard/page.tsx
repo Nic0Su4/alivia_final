@@ -43,30 +43,7 @@ export default function AdminDashboard() {
         </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Gestión de Usuarios</h2>
-          <p className="text-gray-600 mb-4">
-            Administra los usuarios registrados en la plataforma.
-          </p>
-          <Button
-            className="bg-[#2eb893] hover:bg-[#269378] text-white"
-            onClick={() => redirect("/admin/users")}
-          >
-            Ver usuarios
-          </Button>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Gestión de Médicos</h2>
-          <p className="text-gray-600 mb-4">
-            Administra los médicos registrados en la plataforma.
-          </p>
-          <Button
-            className="bg-[#2eb893] hover:bg-[#269378] text-white"
-            onClick={() => redirect("/admin/doctors")}
-          >
-            Ver médicos
-          </Button>
-        </div>
+        {/* Crear médico */}
       </div>
     </div>
   );
