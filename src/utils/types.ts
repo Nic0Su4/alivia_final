@@ -39,6 +39,13 @@ export type Doctor = {
   updatedAt: Timestamp;
 };
 
+export type Admin = {
+  uid: string;
+  email: string;
+  createdAt: Timestamp;
+  role: "admin";
+};
+
 export type Specialty = {
   id: string;
   name: string;
