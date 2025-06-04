@@ -1,25 +1,25 @@
-import RegisterMedicoForm from "@/components/Login/RegisterMedicoForm";
-import Image from "next/image";
-import React from "react";
+"use client";
 
-const RegisterMedicoPage = () => {
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+export default function RegisterMedicoRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirigir al usuario al login normal
+    router.push("/login");
+  }, [router]);
+
   return (
     <div className="flex items-center justify-center h-screen bg-[#4EC7A2]">
-      <div className="bg-white p-8 rounded-lg shadow-md w-150">
-        <Image
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-5GfpJfbkyd8HBavmpeBzzxfIkzUUbz.png"
-          width={100}
-          height={100}
-          alt="AlivIA Logo"
-          className="mx-auto mb-6"
-        />
-        <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
-          Regístrate en AlivIA como doctor
-        </h2>
-        <RegisterMedicoForm />
+      <div className="bg-white p-8 rounded-lg shadow-md w-150 text-center">
+        <h2 className="text-2xl font-bold mb-4">Redirigiendo...</h2>
+        <p className="text-gray-600">
+          El registro de médicos solo está disponible a través del panel de
+          administración.
+        </p>
       </div>
     </div>
   );
-};
-
-export default RegisterMedicoPage;
+}
