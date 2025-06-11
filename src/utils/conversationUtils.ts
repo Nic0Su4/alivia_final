@@ -21,6 +21,7 @@ export const createConversation = async (
 
   const newConversation: Conversation = {
     id: crypto.randomUUID(),
+    userId,
     name,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),

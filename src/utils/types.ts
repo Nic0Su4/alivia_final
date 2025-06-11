@@ -11,6 +11,7 @@ export type Message = {
 
 export type Conversation = {
   id: string;
+  userId: string;
   name: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

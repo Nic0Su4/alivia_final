@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   collection,
+  collectionGroup,
   doc,
+  getCountFromServer,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -113,30 +116,21 @@ export const fetchConversationsForDoctor = async (
   endDate?: Date
 ): Promise<number> => {
   try {
-    const usersRef = collection(db, "users");
-    const usersSnapshot = await getDocs(usersRef);
+    let q = query(
+      collectionGroup(db, "conversations"),
+      where("recommendedDoctorId", "==", doctorId)
+    );
 
-    let totalConversations = 0;
-
-    for (const userDoc of usersSnapshot.docs) {
-      const conversationsRef = collection(userDoc.ref, "conversations");
-      let q = query(
-        conversationsRef,
-        where("recommendedDoctorId", "==", doctorId)
-      );
-
-      if (startDate) {
-        q = query(q, where("createdAt", ">=", Timestamp.fromDate(startDate)));
-      }
-      if (endDate) {
-        q = query(q, where("createdAt", "<=", Timestamp.fromDate(endDate)));
-      }
-
-      const conversationsSnapshot = await getDocs(q);
-      totalConversations += conversationsSnapshot.size;
+    if (startDate) {
+      q = query(q, where("createdAt", ">=", Timestamp.fromDate(startDate)));
+    }
+    if (endDate) {
+      q = query(q, where("createdAt", "<=", Timestamp.fromDate(endDate)));
     }
 
-    return totalConversations;
+    const snapshot = await getCountFromServer(q);
+
+    return snapshot.data().count;
   } catch (error) {
     console.error("Error al obtener conversaciones para el doctor:", error);
     throw new Error("No se pudieron obtener las conversaciones.");
@@ -149,30 +143,26 @@ export const fetchUniqueUsersForDoctor = async (
   endDate?: Date
 ): Promise<number> => {
   try {
-    const usersRef = collection(db, "users");
-    const usersSnapshot = await getDocs(usersRef);
+    let q = query(
+      collectionGroup(db, "conversations"),
+      where("recommendedDoctorId", "==", doctorId)
+    );
 
+    if (startDate) {
+      q = query(q, where("createdAt", ">=", Timestamp.fromDate(startDate)));
+    }
+    if (endDate) {
+      q = query(q, where("createdAt", "<=", Timestamp.fromDate(endDate)));
+    }
+
+    const conversationsSnapshot = await getDocs(q);
     const uniqueUsers = new Set<string>();
 
-    for (const userDoc of usersSnapshot.docs) {
-      const conversationsRef = collection(userDoc.ref, "conversations");
-      let q = query(
-        conversationsRef,
-        where("recommendedDoctorId", "==", doctorId)
-      );
-
-      if (startDate) {
-        q = query(q, where("createdAt", ">=", Timestamp.fromDate(startDate)));
-      }
-      if (endDate) {
-        q = query(q, where("createdAt", "<=", Timestamp.fromDate(endDate)));
-      }
-
-      const conversationsSnapshot = await getDocs(q);
-      if (!conversationsSnapshot.empty) {
-        uniqueUsers.add(userDoc.id); // UID del usuario
-      }
-    }
+    conversationsSnapshot.forEach((conversationDoc) => {
+      const conversation = conversationDoc.data();
+      const userId = conversation.userId;
+      uniqueUsers.add(userId);
+    });
 
     return uniqueUsers.size;
   } catch (error) {
@@ -185,41 +175,41 @@ export const fetchLastUserForDoctor = async (
   doctorId: string
 ): Promise<User | null> => {
   try {
-    const usersRef = collection(db, "users");
-    const usersSnapshot = await getDocs(usersRef);
+    const q = query(
+      collectionGroup(db, "conversations"),
+      where("recommendedDoctorId", "==", doctorId),
+      orderBy("updatedAt", "desc"),
+      limit(1)
+    );
 
-    let lastUser: User | null = null;
-    let latestDate: Date | null = null;
+    const conversationSnap = await getDocs(q);
 
-    for (const userDoc of usersSnapshot.docs) {
-      const conversationsRef = collection(userDoc.ref, "conversations");
-      const q = query(
-        conversationsRef,
-        where("recommendedDoctorId", "==", doctorId),
-        orderBy("updatedAt", "desc"),
-        limit(1)
-      );
-
-      const conversationsSnapshot = await getDocs(q);
-
-      if (!conversationsSnapshot.empty) {
-        const conversation = conversationsSnapshot.docs[0].data();
-        const updatedAt = conversation.updatedAt.toDate();
-
-        if (!latestDate || updatedAt > latestDate) {
-          latestDate = updatedAt;
-          lastUser = {
-            uid: userDoc.id,
-            displayName: userDoc.data().displayName,
-            email: userDoc.data().email,
-            createdAt: userDoc.data().createdAt.toDate(),
-            conversations: [],
-          };
-        }
-      }
+    if (conversationSnap.empty) {
+      return null;
     }
 
-    return lastUser;
+    const lastConversation = conversationSnap.docs[0].data();
+    const userId = lastConversation.userId;
+
+    if (!userId) {
+      throw new Error("La conversación no tiene un ID de usuario asociado.");
+    }
+
+    const userDocRef = doc(db, "users", userId);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      return null;
+    }
+
+    const userData = userDocSnap.data();
+    return {
+      uid: userDocSnap.id,
+      displayName: userData.displayName,
+      email: userData.email,
+      createdAt: userData.createdAt.toDate(),
+      conversations: [], // Opcional, puedes dejarlo vacío
+    };
   } catch (error) {
     console.error("Error al obtener el último usuario para el doctor:", error);
     throw new Error("No se pudo obtener el último usuario recomendado.");
@@ -233,41 +223,52 @@ export const fetchUserListForDoctor = async (
   limitResults?: number
 ): Promise<User[]> => {
   try {
-    const usersRef = collection(db, "users");
-    const usersSnapshot = await getDocs(usersRef);
+    let q = query(
+      collectionGroup(db, "conversations"),
+      where("recommendedDoctorId", "==", doctorId)
+    );
 
-    const users: User[] = [];
-
-    for (const userDoc of usersSnapshot.docs) {
-      const conversationsRef = collection(userDoc.ref, "conversations");
-      let q = query(
-        conversationsRef,
-        where("recommendedDoctorId", "==", doctorId)
-      );
-
-      if (startDate) {
-        q = query(q, where("createdAt", ">=", Timestamp.fromDate(startDate)));
-      }
-      if (endDate) {
-        q = query(q, where("createdAt", "<=", Timestamp.fromDate(endDate)));
-      }
-
-      const conversationsSnapshot = await getDocs(q);
-
-      if (!conversationsSnapshot.empty) {
-        users.push({
-          uid: userDoc.id,
-          displayName: userDoc.data().displayName,
-          email: userDoc.data().email,
-          createdAt: userDoc.data().createdAt.toDate(),
-          conversations: [],
-        });
-
-        if (limitResults && users.length >= limitResults) break;
-      }
+    if (startDate) {
+      q = query(q, where("createdAt", ">=", Timestamp.fromDate(startDate)));
+    }
+    if (endDate) {
+      q = query(q, where("createdAt", "<=", Timestamp.fromDate(endDate)));
     }
 
-    return users;
+    const conversationsSnapshot = await getDocs(q);
+    const userIds = new Set<string>();
+
+    conversationsSnapshot.forEach((doc) => {
+      userIds.add(doc.data().userId);
+    });
+
+    const userFetchPromises: Promise<User | null>[] = [];
+
+    let userIdsToFetch = Array.from(userIds);
+    if (limitResults) {
+      userIdsToFetch = userIdsToFetch.slice(0, limitResults);
+    }
+
+    for (const userId of userIdsToFetch) {
+      const userDocRef = doc(db, "users", userId);
+      userFetchPromises.push(
+        getDoc(userDocRef).then((userDoc) => {
+          if (!userDoc.exists()) return null;
+          const userData = userDoc.data();
+          return {
+            uid: userDoc.id,
+            displayName: userData.displayName,
+            email: userData.email,
+            createdAt: userData.createdAt.toDate(),
+            conversations: [],
+          };
+        })
+      );
+    }
+
+    const resolvedUsers = await Promise.all(userFetchPromises);
+
+    return resolvedUsers.filter((user): user is User => user !== null);
   } catch (error) {
     console.error(
       "Error al obtener la lista de usuarios para el doctor:",
