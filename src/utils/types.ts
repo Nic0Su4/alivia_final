@@ -25,7 +25,6 @@ export type User = {
   email: string;
   uid: string;
   createdAt: Timestamp;
-  conversations: Conversation[];
 };
 
 export type Doctor = {

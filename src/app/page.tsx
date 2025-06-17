@@ -26,14 +26,14 @@ const LandingPage = () => {
               Comenzar ahora
             </Button>
           </Link>
-          <Link href={"/register-medico"}>
+          {/* <Link href={"/register-medico"}>
             <Button
               variant="outline"
               className="w-full border-[#40E0D0] text-[#2eb893] hover:bg-[#E6FFFD] font-bold hover:text-[#269378]"
             >
               Soy médico
             </Button>
-          </Link>
+          </Link> */}
         </div>
         <div className="text-center">
           <span className="text-gray-600">¿Ya tienes una cuenta?</span>{" "}
