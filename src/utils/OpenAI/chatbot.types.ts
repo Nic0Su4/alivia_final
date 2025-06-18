@@ -1,4 +1,4 @@
-import { Doctor, Specialty } from "../types";
+import { Doctor, Specialty, User } from "../types";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -9,6 +9,7 @@ export interface EnviarMensajeProps {
   mensaje: string;
   history: ChatMessage[];
   specialties: Specialty[];
+  userInfo: User | null;
   onStreamUpdate: (chunk: string) => void;
   onDoctorRecommendation?: (doctor: Doctor | null) => void;
   selectedSpecialty: Specialty | null;
