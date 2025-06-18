@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -22,6 +23,14 @@ import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { auth, db } from "@/firebase/config";
 import { User } from "@/utils/types";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Textarea } from "../ui/textarea";
 
 const FormSchema = z.object({
   email: z
@@ -33,6 +42,14 @@ const FormSchema = z.object({
     .min(1, "Ingresa tu contraseña")
     .min(8, "La contraseña debe tener al menos 8 caracteres"),
   displayName: z.string().min(1, "Ingresa tu nombre"),
+  phoneNumber: z
+    .string()
+    .regex(/^9\d{8}$/, "Ingresa un número de celular válido de 9 dígitos"),
+  birthDate: z.string().min(1, "Ingresa tu fecha de nacimiento"),
+  gender: z.enum(["Masculino", "Femenino", "Otro"], {
+    errorMap: () => ({ message: "Selecciona un género" }),
+  }),
+  summaryHistory: z.string().optional(), // Clave: es opcional
 });
 
 const RegisterForm = () => {
@@ -42,6 +59,10 @@ const RegisterForm = () => {
       email: "",
       password: "",
       displayName: "",
+      phoneNumber: "",
+      birthDate: "",
+      gender: undefined,
+      summaryHistory: "",
     },
   });
 
@@ -51,14 +72,21 @@ const RegisterForm = () => {
   const [createUserWithEmailAndPassword] =
     useCreateUserWithEmailAndPassword(auth);
 
-  const onSubmit = async ({
-    email,
-    password,
-    displayName,
-  }: z.infer<typeof FormSchema>) => {
+  const onSubmit = async (data: z.infer<typeof FormSchema>) => {
     setIsLoading(true);
     try {
-      const res = await createUserWithEmailAndPassword(email, password);
+      const res = await createUserWithEmailAndPassword(
+        data.email,
+        data.password
+      );
+      const {
+        displayName,
+        email,
+        birthDate,
+        phoneNumber,
+        gender,
+        summaryHistory,
+      } = data;
 
       if (!res) {
         setIsLoading(false);
@@ -71,6 +99,10 @@ const RegisterForm = () => {
         uid: res.user.uid,
         createdAt: Timestamp.now(),
         conversations: [],
+        birthDate,
+        phoneNumber,
+        gender,
+        summaryHistory: summaryHistory || "",
       };
 
       await setDoc(doc(db, "users", res.user.uid), userData);
@@ -79,7 +111,7 @@ const RegisterForm = () => {
       router.push("/dashboard");
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      form.setError("email", {
+      form.setError("root", {
         type: "manual",
         message: "Ocurrió un error al registrar el usuario",
       });
@@ -129,6 +161,80 @@ const RegisterForm = () => {
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="birthDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fecha de Nacimiento</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phoneNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Número de Celular</FormLabel>
+                <FormControl>
+                  <Input type="tel" placeholder="900000000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* --- NUEVO CAMPO: GÉNERO (con Select) --- */}
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Género</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona tu género" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Masculino">Masculino</SelectItem>
+                    <SelectItem value="Femenino">Femenino</SelectItem>
+                    <SelectItem value="Otro">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* --- NUEVO CAMPO: HISTORIAL RESUMIDO (con Textarea) --- */}
+          <FormField
+            control={form.control}
+            name="summaryHistory"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Historial Médico Relevante (Opcional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Ej: Soy alérgico a la penicilina, tengo asma..."
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Informa sobre condiciones o alergias importantes.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

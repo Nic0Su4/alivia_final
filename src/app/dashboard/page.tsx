@@ -24,6 +24,8 @@ import {
 import { getDoctorById } from "@/utils/doctorUtils";
 import WellcomeNew from "@/components/ui/WellcomeScreen";
 import BrainLoadingScreen from "@/components/ui/loading";
+import { getSpecialties } from "@/utils/specialtiesUtils";
+import { ChatMessage } from "@/utils/OpenAI/chatbot.types";
 
 export default function Chat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -35,10 +37,19 @@ export default function Chat() {
   const [recommendedDoctor, setRecommendedDoctor] = useState<Doctor | null>(
     null
   );
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [loading, setLoading] = useState(true);
 
   const user = useUserStore((state) => state.user) as User | null;
   const setUser = useUserStore((state) => state.setUser);
+
+  useEffect(() => {
+    const fetchSpecialties = async () => {
+      const fetchedSpecialties = await getSpecialties();
+      setSpecialties(fetchedSpecialties);
+    };
+    fetchSpecialties();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -89,15 +100,15 @@ export default function Chat() {
   const handleBotResponse = async (
     input: string,
     messageId: string,
-    specialty?: Specialty | null
+    specialty: Specialty | null
   ): Promise<string> => {
     let botReplyContent = "";
 
     const history =
-      selectedConversation?.messages.map((msg) => ({
+      (selectedConversation?.messages.map((msg) => ({
         role: msg.sender === "user" ? "user" : "assistant",
         content: msg.content,
-      })) || [];
+      })) as ChatMessage[]) || [];
 
     setSelectedConversation((prev) =>
       prev
@@ -116,20 +127,22 @@ export default function Chat() {
         : prev
     );
 
-    await enviarMensaje(
-      input,
-      history,
-      (chunk) => {
+    await enviarMensaje({
+      mensaje: input,
+      history: history,
+      specialties,
+      userInfo: user,
+      onStreamUpdate: (chunk) => {
         botReplyContent += chunk; // Construye la respuesta en tiempo real
         updateBotMessageContent(messageId, botReplyContent);
       },
-      async (doctor) => {
+      onDoctorRecommendation: async (doctor) => {
         if (doctor) {
           await handleDoctorRecommendation(doctor);
         }
       },
-      specialty
-    );
+      selectedSpecialty: specialty,
+    });
 
     return botReplyContent; // Respuesta completa del bot
   };
@@ -179,7 +192,7 @@ export default function Chat() {
     }
   };
 
-  const handleSend = async (message: string, specialty?: Specialty | null) => {
+  const handleSend = async (message: string, specialty: Specialty | null) => {
     if (!message.trim() || !user || !selectedConversation) return;
 
     const userMessage: Message = {
@@ -263,14 +276,15 @@ export default function Chat() {
       ? await getDoctorById(fetchedConversation.recommendedDoctorId)
       : null;
 
-    setRecommendedDoctor(doctor);
-
-    iniciarChat(
-      fetchedConversation?.messages.map((msg) => ({
+    const history =
+      (fetchedConversation?.messages.map((msg) => ({
         role: msg.sender === "user" ? "user" : "assistant",
         content: msg.content,
-      })) || []
-    );
+      })) as ChatMessage[]) || [];
+
+    setRecommendedDoctor(doctor);
+
+    iniciarChat(specialties, history, user);
 
     if (isMobile) setIsSidebarOpen(false);
   };
@@ -294,7 +308,7 @@ export default function Chat() {
 
     setConversations((prev) => [...prev, newConversation]);
     setSelectedConversation(newConversation);
-    iniciarChat([]);
+    iniciarChat(specialties, [], user);
     if (isMobile) setIsSidebarOpen(false);
   };
 

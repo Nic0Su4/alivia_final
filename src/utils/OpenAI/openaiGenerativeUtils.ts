@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { fetchDoctorsBySpecialty } from "../doctorUtils";
-import { getSpecialties } from "../specialtiesUtils";
-import { Doctor, Specialty } from "../types";
+import { Doctor, Specialty, User } from "../types";
 import {
   CHATBOT_CONSTANTS,
   ChatMessage,
@@ -9,13 +8,48 @@ import {
 } from "./chatbot.types";
 import openai from "./openaiClient";
 
+const calculateAge = (birthDateString: string | undefined): number | null => {
+  if (!birthDateString) return null;
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+  if (
+    monthDifference < 0 ||
+    (monthDifference === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+  return age;
+};
+
 const createSystemPrompt = (
   specialtiesList: string,
-  selectedSpecialty: Specialty | null
+  selectedSpecialty: Specialty | null,
+  userInfo: User | null
 ): string => {
+  let userContext = "";
+  if (userInfo) {
+    const age = calculateAge(userInfo.birthDate);
+    const details = [
+      userInfo.displayName ? `se llama ${userInfo.displayName}` : "",
+      age ? `tiene ${age} años` : "",
+      userInfo.gender ? `su género es ${userInfo.gender}` : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (details) {
+      userContext = `\n\n**Contexto del Usuario:** Estás hablando con un usuario que ${details}. Ten en cuenta esta información para personalizar tus preguntas y recomendaciones.`;
+    }
+
+    if (userInfo.summaryHistory) {
+      userContext += `\n**Historial Médico Relevante:** El usuario ha indicado lo siguiente: "${userInfo.summaryHistory}".`;
+    }
+  }
   if (selectedSpecialty) {
     // Prompt cuando ya hay una especialidad seleccionada
-    return `Eres un chatbot llamado AlivIA especializado en ${selectedSpecialty.name}, para usuarios de Perú. Tu función es ayudar a identificar posibles diagnósticos preliminares relacionados con ${selectedSpecialty.name}.
+    return `Eres un chatbot llamado AlivIA especializado en ${selectedSpecialty.name}, para usuarios de Perú. Tu función es ayudar a identificar posibles diagnósticos preliminares relacionados con ${selectedSpecialty.name}. ${userContext}
     
     Como especialista en ${selectedSpecialty.name}, debes:
     1. Hacer preguntas específicas y relevantes para esta especialidad.
@@ -27,7 +61,7 @@ const createSystemPrompt = (
   }
 
   // Prompt general por defecto
-  return `Eres un chatbot llamado AlivIA, para usuarios de Perú, especializado en asistencia de salud. Tu función es ayudar a los usuarios a identificar síntomas y recomendar médicos de las siguientes especialidades: ${specialtiesList}.
+  return `Eres un chatbot llamado AlivIA, para usuarios de Perú, especializado en asistencia de salud. Tu función es ayudar a los usuarios a identificar síntomas y recomendar médicos de las siguientes especialidades: ${specialtiesList}. ${userContext}
 
   Tu trabajo es:
   1. Hacer preguntas claras para entender los síntomas.
@@ -40,7 +74,8 @@ const createSystemPrompt = (
 export const enviarMensaje = async ({
   mensaje,
   history,
-  specialties, // Recibe las especialidades como parámetro
+  specialties,
+  userInfo,
   onStreamUpdate,
   onDoctorRecommendation,
   selectedSpecialty,
@@ -48,7 +83,11 @@ export const enviarMensaje = async ({
   const specialtiesList = specialties.map((s) => s.name).join(", ");
 
   // Usamos la función auxiliar para generar el prompt
-  const systemPrompt = createSystemPrompt(specialtiesList, selectedSpecialty);
+  const systemPrompt = createSystemPrompt(
+    specialtiesList,
+    selectedSpecialty,
+    userInfo
+  );
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
@@ -61,7 +100,7 @@ export const enviarMensaje = async ({
   try {
     const stream = await openai.chat.completions.create({
       model: CHATBOT_CONSTANTS.MODEL_NAME,
-      messages: messages as any, // OpenAI SDK puede requerir 'any' aquí, pero nuestro tipado interno es fuerte
+      messages: messages as any,
       stream: true,
     });
 
@@ -71,7 +110,6 @@ export const enviarMensaje = async ({
       onStreamUpdate(content);
     }
 
-    // El resto de la lógica de análisis de respuesta permanece igual, pero usando constantes
     const recommendationMatch = fullResponse.match(
       CHATBOT_CONSTANTS.RECOMMENDATION_REGEX
     );
@@ -125,12 +163,13 @@ export const enviarMensaje = async ({
 
 export const iniciarChat = (
   specialties: Specialty[],
-  conversationHistory: ChatMessage[] = []
+  conversationHistory: ChatMessage[] = [],
+  userInfo: User | null
 ): ChatMessage[] => {
   const specialtiesList = specialties.map((s) => s.name).join(", ");
   const initialSystemMessage = {
     role: "system" as const,
-    content: createSystemPrompt(specialtiesList, null), // Reutilizamos la función del prompt
+    content: createSystemPrompt(specialtiesList, null, userInfo),
   };
 
   return [initialSystemMessage, ...conversationHistory];

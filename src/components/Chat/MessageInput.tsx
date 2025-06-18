@@ -22,7 +22,7 @@ import {
 } from "../ui/select";
 
 interface MessageInputProps {
-  onSend: (message: string, specialty?: Specialty | null) => void;
+  onSend: (message: string, specialty: Specialty | null) => void;
   input: string;
   setInput: (value: string) => void;
   selectedConversation: Conversation | null;

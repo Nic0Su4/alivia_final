@@ -25,6 +25,12 @@ export type User = {
   email: string;
   uid: string;
   createdAt: Timestamp;
+  birthDate: string;
+  phoneNumber: string;
+  gender: "Masculino" | "Femenino" | "Otro";
+  conversations: Conversation[];
+
+  summaryHistory?: string;
 };
 
 export type Doctor = {
