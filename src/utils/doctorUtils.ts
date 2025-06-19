@@ -209,6 +209,10 @@ export const fetchLastUserForDoctor = async (
       email: userData.email,
       createdAt: userData.createdAt.toDate(),
       conversations: [], // Opcional, puedes dejarlo vacío
+      phoneNumber: userData.phoneNumber,
+      birthDate: userData.birthDate,
+      gender: userData.gender,
+      summaryHistory: userData.summaryHistory,
     };
   } catch (error) {
     console.error("Error al obtener el último usuario para el doctor:", error);
@@ -261,6 +265,10 @@ export const fetchUserListForDoctor = async (
             email: userData.email,
             createdAt: userData.createdAt.toDate(),
             conversations: [],
+            phoneNumber: userData.phoneNumber,
+            birthDate: userData.birthDate,
+            gender: userData.gender,
+            summaryHistory: userData.summaryHistory,
           };
         })
       );
