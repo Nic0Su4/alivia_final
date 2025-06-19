@@ -98,7 +98,6 @@ const RegisterForm = () => {
         email,
         uid: res.user.uid,
         createdAt: Timestamp.now(),
-        conversations: [],
         birthDate,
         phoneNumber,
         gender,
