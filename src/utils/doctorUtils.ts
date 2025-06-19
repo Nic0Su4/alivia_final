@@ -208,7 +208,6 @@ export const fetchLastUserForDoctor = async (
       displayName: userData.displayName,
       email: userData.email,
       createdAt: userData.createdAt.toDate(),
-      conversations: [], // Opcional, puedes dejarlo vacío
       phoneNumber: userData.phoneNumber,
       birthDate: userData.birthDate,
       gender: userData.gender,
@@ -264,7 +263,6 @@ export const fetchUserListForDoctor = async (
             displayName: userData.displayName,
             email: userData.email,
             createdAt: userData.createdAt.toDate(),
-            conversations: [],
             phoneNumber: userData.phoneNumber,
             birthDate: userData.birthDate,
             gender: userData.gender,
