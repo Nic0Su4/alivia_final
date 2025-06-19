@@ -84,7 +84,7 @@ export default function UsersListPage() {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Conversaciones
+                    Teléfono
                   </th>
                 </tr>
               </thead>
@@ -106,7 +106,7 @@ export default function UsersListPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {user.conversations?.length || 0}
+                        {user.phoneNumber}
                       </div>
                     </td>
                   </tr>

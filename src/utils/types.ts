@@ -28,8 +28,6 @@ export type User = {
   birthDate: string;
   phoneNumber: string;
   gender: "Masculino" | "Femenino" | "Otro";
-  conversations: Conversation[];
-
   summaryHistory?: string;
 };
 
