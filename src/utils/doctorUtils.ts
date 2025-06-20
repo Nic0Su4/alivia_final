@@ -16,6 +16,104 @@ import {
 import { Doctor, User } from "./types";
 import { db } from "@/firebase/config";
 
+interface PatientStats {
+  totalPatients: number;
+  genderDistribution: {
+    masculino: number; // Porcentaje (0-100)
+    femenino: number;
+    otro: number;
+  };
+  ageDistribution: {
+    nino: number; // 0-17 años
+    joven: number; // 18-29 años
+    adulto: number; // 30-59 años
+    adultoMayor: number; // 60+ años
+  };
+}
+
+const calculateAge = (birthDate: string | Date): number => {
+  const birthDateObj =
+    typeof birthDate === "string" ? new Date(birthDate) : birthDate;
+  const today = new Date();
+  let age = today.getFullYear() - birthDateObj.getFullYear();
+  const monthDifference = today.getMonth() - birthDateObj.getMonth();
+  if (
+    monthDifference < 0 ||
+    (monthDifference === 0 && today.getDate() < birthDateObj.getDate())
+  ) {
+    age--;
+  }
+  return age;
+};
+
+// Helper para clasificar la edad en grupos
+type AgeGroup = "nino" | "joven" | "adulto" | "adultoMayor";
+
+const getAgeGroup = (age: number): AgeGroup => {
+  if (age <= 17) return "nino";
+  if (age <= 29) return "joven";
+  if (age <= 59) return "adulto";
+  return "adultoMayor";
+};
+
+export const getDoctorPatientStats = async (
+  doctorId: string
+): Promise<PatientStats> => {
+  // 1. Reutilizamos la función que ya tienes para obtener todos los pacientes
+  const patients = await fetchUserListForDoctor(doctorId);
+  const totalPatients = patients.length;
+
+  // Si no hay pacientes, devolvemos estadísticas en cero.
+  if (totalPatients === 0) {
+    return {
+      totalPatients: 0,
+      genderDistribution: { masculino: 0, femenino: 0, otro: 0 },
+      ageDistribution: { nino: 0, joven: 0, adulto: 0, adultoMayor: 0 },
+    };
+  }
+
+  // 2. Inicializamos contadores
+  const genderCounts = { masculino: 0, femenino: 0, otro: 0 };
+  const ageCounts = { nino: 0, joven: 0, adulto: 0, adultoMayor: 0 };
+
+  // 3. Procesamos cada paciente para contar
+  for (const patient of patients) {
+    // Conteo por género
+    switch (patient.gender) {
+      case "Masculino":
+        genderCounts.masculino++;
+        break;
+      case "Femenino":
+        genderCounts.femenino++;
+        break;
+      case "Otro":
+        genderCounts.otro++;
+        break;
+    }
+
+    // Conteo por edad
+    const age = calculateAge(patient.birthDate);
+    const ageGroup = getAgeGroup(age);
+    ageCounts[ageGroup]++;
+  }
+
+  // 4. Calculamos y devolvemos los porcentajes
+  return {
+    totalPatients,
+    genderDistribution: {
+      masculino: (genderCounts.masculino / totalPatients) * 100,
+      femenino: (genderCounts.femenino / totalPatients) * 100,
+      otro: (genderCounts.otro / totalPatients) * 100,
+    },
+    ageDistribution: {
+      nino: (ageCounts.nino / totalPatients) * 100,
+      joven: (ageCounts.joven / totalPatients) * 100,
+      adulto: (ageCounts.adulto / totalPatients) * 100,
+      adultoMayor: (ageCounts.adultoMayor / totalPatients) * 100,
+    },
+  };
+};
+
 export const fetchAllDoctors = async (): Promise<Doctor[]> => {
   try {
     const doctorsRef = collection(db, "doctors");
