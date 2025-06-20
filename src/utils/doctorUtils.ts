@@ -16,7 +16,7 @@ import {
 import { Doctor, User } from "./types";
 import { db } from "@/firebase/config";
 
-interface PatientStats {
+export interface PatientStats {
   totalPatients: number;
   genderDistribution: {
     masculino: number; // Porcentaje (0-100)

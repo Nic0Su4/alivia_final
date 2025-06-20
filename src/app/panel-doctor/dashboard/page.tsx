@@ -20,8 +20,11 @@ import {
   fetchUniqueUsersForDoctor,
   fetchLastUserForDoctor,
   fetchUserListForDoctor,
+  PatientStats,
+  getDoctorPatientStats,
 } from "@/utils/doctorUtils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DoctorStatsCards } from "@/components/Doctor/DoctorStatsCards";
 
 export default function PanelDoctor() {
   const doctor = useDoctorStore((state) => state.doctor) as Doctor | null;
@@ -30,6 +33,8 @@ export default function PanelDoctor() {
   const [lastPatient, setLastPatient] = useState<string | null>(null);
   const [totalConversations, setTotalConversations] = useState(0);
   const [recentPatients, setRecentPatients] = useState<User[]>([]);
+
+  const [patientStats, setPatientStats] = useState<PatientStats | null>(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -51,12 +56,14 @@ export default function PanelDoctor() {
         fetchUniqueUsersForDoctor(doctor.uid),
         fetchLastUserForDoctor(doctor.uid),
         fetchUserListForDoctor(doctor.uid, undefined, undefined, 10),
+        getDoctorPatientStats(doctor.uid),
       ])
-        .then(([conversations, users, lastUser, userList]) => {
+        .then(([conversations, users, lastUser, userList, stats]) => {
           setTotalConversations(conversations);
           setTotalPatients(users);
           setLastPatient(lastUser ? lastUser.displayName : "N/A");
           setRecentPatients(userList);
+          setPatientStats(stats);
         })
         .catch((error) => {
           console.error("Error al cargar los datos del doctor:", error);
@@ -124,6 +131,8 @@ export default function PanelDoctor() {
           </CardContent>
         </Card>
       </div>
+
+      <DoctorStatsCards stats={patientStats} loading={loading} />
 
       {/* Additional content can be added here */}
       <div className="mt-8">
