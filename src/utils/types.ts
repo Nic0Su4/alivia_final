@@ -17,7 +17,7 @@ export type Conversation = {
   updatedAt: Timestamp;
   messages: Message[];
   status: "open" | "closed";
-  recommendedDoctorId: string | null;
+  recommendedSpecialty: Specialty | null;
 };
 
 export type User = {

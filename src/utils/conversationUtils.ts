@@ -1,6 +1,6 @@
 // utils/conversationUtils.ts
 import { db } from "@/firebase/config";
-import { Conversation, Message } from "@/utils/types";
+import { Conversation, Message, Specialty } from "@/utils/types";
 import {
   collection,
   deleteDoc,
@@ -27,7 +27,7 @@ export const createConversation = async (
     updatedAt: Timestamp.now(),
     messages: [],
     status: "open",
-    recommendedDoctorId: null,
+    recommendedSpecialty: null,
   };
 
   await setDoc(doc(userConversationsRef, newConversation.id), newConversation);
@@ -171,10 +171,10 @@ export const deleteConversation = async (
   return;
 };
 
-export const addRecommendation = async (
+export const addSpecialtyRecommendation = async (
   userId: string,
   conversation: Conversation,
-  doctorId: string
+  specialty: Specialty | null
 ): Promise<void> => {
   try {
     const conversationRef = doc(
@@ -192,7 +192,7 @@ export const addRecommendation = async (
       }
 
       transaction.update(conversationRef, {
-        recommendedDoctorId: doctorId,
+        recommendedSpecialty: specialty,
         updatedAt: Timestamp.now(),
       });
     });

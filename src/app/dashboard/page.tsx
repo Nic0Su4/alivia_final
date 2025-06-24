@@ -7,6 +7,7 @@ import MessageInput from "@/components/Chat/MessageInput";
 import Header from "@/components/Chat/Header";
 import {
   addMessage,
+  addSpecialtyRecommendation,
   createConversation,
   editConversation,
   getUserConversation,
@@ -118,8 +119,16 @@ export default function Chat() {
         "closed"
       );
 
+      await addSpecialtyRecommendation(
+        user.uid,
+        selectedConversation,
+        specialty
+      );
+
       setSelectedConversation((prev) =>
-        prev ? { ...prev, status: "closed" } : null
+        prev
+          ? { ...prev, status: "closed", recommendedSpecialty: specialty }
+          : null
       );
     }
   };
@@ -273,8 +282,6 @@ export default function Chat() {
         },
       ]);
     }
-
-    // Input ya se limpia en el componente MessageInput
   };
 
   const handleSelectConversation = async (conversation: Conversation) => {
@@ -284,8 +291,8 @@ export default function Chat() {
     );
     setSelectedConversation(fetchedConversation);
 
-    const doctor = fetchedConversation?.recommendedDoctorId
-      ? await getDoctorById(fetchedConversation.recommendedDoctorId)
+    const specialty = fetchedConversation?.recommendedSpecialty
+      ? fetchedConversation?.recommendedSpecialty
       : null;
 
     const history =
@@ -294,7 +301,7 @@ export default function Chat() {
         content: msg.content,
       })) as ChatMessage[]) || [];
 
-    setRecommendedDoctor(doctor);
+    setSpecialtyForScheduling(specialty);
 
     iniciarChat(specialties, history, user);
 

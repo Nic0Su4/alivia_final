@@ -66,12 +66,10 @@ export default function MessageInput({
   }, []);
 
   useEffect(() => {
-    if (selectedConversation?.recommendedDoctorId) {
-      getDoctorById(selectedConversation.recommendedDoctorId).then((doctor) => {
-        setRecommendedDoctor(doctor);
-      });
+    if (selectedConversation?.recommendedSpecialty) {
+      setSelectedSpecialty(selectedConversation.recommendedSpecialty);
     }
-  }, [selectedConversation, setRecommendedDoctor]);
+  }, [selectedConversation, setSelectedSpecialty]);
 
   return (
     <div className="flex flex-col p-4 gap-2 bg-[#49deb9] h-auto">
@@ -122,7 +120,7 @@ export default function MessageInput({
           }}
           placeholder={
             isChatClosed
-              ? "Esta conversación ha finalizdo"
+              ? "Esta conversación ha finalizado"
               : "Escribe tu mensaje"
           }
           className="flex-1 resize-none overflow-y-auto rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
