@@ -9,6 +9,7 @@ import {
   getDocs,
   doc,
   updateDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { Appointment, Doctor } from "./types";
 
@@ -80,19 +81,62 @@ export const getDoctorAvailability = async (
   doctor: Doctor,
   date: Date
 ): Promise<string[]> => {
-  // TODO: Implementar la lógica completa en la Fase 2 del Frontend.
-  // Esta función necesitará:
-  // 1. Verificar los `workingHours` del doctor para ese día de la semana.
-  // 2. Generar todos los slots posibles (ej. cada 30 minutos).
-  // 3. Obtener las citas ya 'confirmed' para ese día.
-  // 4. Filtrar los slots ya ocupados.
-
-  console.log(
-    "Buscando disponibilidad para el doctor",
-    doctor.uid,
-    "en la fecha",
-    date
+  // 1. Obtener los horarios de trabajo del doctor para ese día de la semana
+  const dayOfWeek = date.getDay(); // Domingo = 0, Lunes = 1, etc.
+  const workingDay = doctor.workingHours?.find(
+    (d) => d.dayOfWeek === dayOfWeek
   );
-  // Devolvemos un array de ejemplo por ahora.
-  return ["09:00", "09:30", "10:00", "11:00", "15:00", "15:30"];
+
+  // Si el doctor no trabaja ese día, devolver un array vacío
+  if (!workingDay || !workingDay.slots || workingDay.slots.length === 0) {
+    return [];
+  }
+
+  // 2. Obtener las citas ya confirmadas para ese día específico
+  const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+  const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+
+  const appointmentsQuery = query(
+    collection(db, "appointments"),
+    where("doctorId", "==", doctor.uid),
+    where("status", "==", "confirmed"),
+    where("appointmentDate", ">=", Timestamp.fromDate(startOfDay)),
+    where("appointmentDate", "<=", Timestamp.fromDate(endOfDay))
+  );
+
+  const snapshot = await getDocs(appointmentsQuery);
+  const bookedTimes = new Set(
+    snapshot.docs.map((doc) => {
+      const data = doc.data() as Appointment;
+      // Formatear la hora a HH:mm para comparar fácilmente
+      return data.appointmentDate
+        .toDate()
+        .toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    })
+  );
+
+  // 3. Generar todos los slots posibles y filtrar los ocupados
+  const availableSlots: string[] = [];
+  const slotDuration = 30; // Duración de cada cita en minutos
+
+  for (const slot of workingDay.slots) {
+    const startTime = new Date(`${date.toDateString()} ${slot.start}`);
+    const endTime = new Date(`${date.toDateString()} ${slot.end}`);
+
+    const currentSlot = startTime;
+    while (currentSlot < endTime) {
+      const formattedTime = currentSlot.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      if (!bookedTimes.has(formattedTime)) {
+        availableSlots.push(formattedTime);
+      }
+
+      currentSlot.setMinutes(currentSlot.getMinutes() + slotDuration);
+    }
+  }
+
+  return availableSlots;
 };

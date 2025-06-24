@@ -25,15 +25,21 @@ interface MessageInputProps {
   onSend: (message: string, specialty: Specialty | null) => void;
   input: string;
   setInput: (value: string) => void;
+  isChatClosed: boolean;
+  specialtyForScheduling: Specialty | null;
   selectedConversation: Conversation | null;
-  recommendedDoctor: Doctor | null;
   setRecommendedDoctor: (doctor: Doctor) => void;
+  onScheduleClick: () => void;
+  recommendedDoctor: Doctor | null;
 }
 
 export default function MessageInput({
   onSend,
   input,
   setInput,
+  isChatClosed,
+  specialtyForScheduling,
+  onScheduleClick,
   selectedConversation,
   recommendedDoctor,
   setRecommendedDoctor,
@@ -51,7 +57,6 @@ export default function MessageInput({
   };
 
   useEffect(() => {
-    // Cargar especialidades disponibles
     const loadSpecialties = async () => {
       const specialtiesList = await getSpecialties();
       setSpecialties(specialtiesList);
@@ -69,9 +74,9 @@ export default function MessageInput({
   }, [selectedConversation, setRecommendedDoctor]);
 
   return (
-    <div className="flex flex-col p-4 gap-2 bg-[#49deb9] h-40">
+    <div className="flex flex-col p-4 gap-2 bg-[#49deb9] h-auto">
       {/* Selector de especialidad */}
-      {selectedConversation?.status === "open" && (
+      {!isChatClosed && (
         <div className="flex items-center gap-2 mb-2">
           <Stethoscope className="h-5 w-5 text-gray-700" />
           <Select
@@ -115,25 +120,39 @@ export default function MessageInput({
               handleSend();
             }
           }}
-          placeholder={`${
-            selectedConversation?.status === "open"
-              ? "Escribe tu mensaje..."
-              : "Doctor recomendado, chat cerrado"
-          }`}
+          placeholder={
+            isChatClosed
+              ? "Esta conversación ha finalizdo"
+              : "Escribe tu mensaje"
+          }
           className="flex-1 resize-none overflow-y-auto rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={selectedConversation?.status === "closed"}
+          disabled={isChatClosed}
           rows={3}
         />
 
         <div className="flex items-center gap-3">
-          <Button
-            onClick={handleSend}
-            className="ml-2 p-2"
-            disabled={selectedConversation?.status === "closed"}
-          >
-            <Send className="h-6 w-6" />
-          </Button>
-          {selectedConversation?.recommendedDoctorId && recommendedDoctor && (
+          {!isChatClosed && (
+            <Button
+              onClick={handleSend}
+              className="ml-2 p-2"
+              disabled={selectedConversation?.status === "closed"}
+            >
+              <Send className="h-6 w-6" />
+            </Button>
+          )}
+
+          {/* Se muestra solo si hay una especialidad recomendada y el chat está CERRADO */}
+          {isChatClosed && specialtyForScheduling && (
+            <Button
+              onClick={onScheduleClick}
+              className="bg-blue-500 hover:bg-blue-600 ml-2"
+            >
+              <Stethoscope className="mr-2 h-5 w-5" />
+              Agendar Cita
+            </Button>
+          )}
+
+          {recommendedDoctor && (
             <Dialog>
               <DialogTrigger className="flex items-center justify-between gap-2 px-4 py-2 bg-blue-500 text-white font-medium text-sm rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition">
                 <Contact />

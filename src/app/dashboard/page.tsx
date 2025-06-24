@@ -7,7 +7,6 @@ import MessageInput from "@/components/Chat/MessageInput";
 import Header from "@/components/Chat/Header";
 import {
   addMessage,
-  addRecommendation,
   createConversation,
   editConversation,
   getUserConversation,
@@ -21,11 +20,21 @@ import {
   enviarMensaje,
   iniciarChat,
 } from "@/utils/OpenAI/openaiGenerativeUtils";
-import { getDoctorById } from "@/utils/doctorUtils";
+import { getDoctorById, fetchDoctorsBySpecialty } from "@/utils/doctorUtils";
 import WellcomeNew from "@/components/ui/WellcomeScreen";
 import BrainLoadingScreen from "@/components/ui/loading";
 import { getSpecialties } from "@/utils/specialtiesUtils";
 import { ChatMessage } from "@/utils/OpenAI/chatbot.types";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { AppointmentScheduler } from "@/components/Chat/AppointmentScheduler";
+import { Button } from "@/components/ui/button";
 
 export default function Chat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -42,6 +51,14 @@ export default function Chat() {
 
   const user = useUserStore((state) => state.user) as User | null;
   const setUser = useUserStore((state) => state.setUser);
+
+  const [specialtyForScheduling, setSpecialtyForScheduling] =
+    useState<Specialty | null>(null);
+  const [doctorsForSelection, setDoctorsForSelection] = useState<Doctor[]>([]);
+  const [isDoctorSelectionOpen, setIsDoctorSelectionOpen] = useState(false);
+  const [selectedDoctorForBooking, setSelectedDoctorForBooking] =
+    useState<Doctor | null>(null);
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
 
   useEffect(() => {
     const fetchSpecialties = async () => {
@@ -63,17 +80,11 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
-    // Solo ajustamos el sidebar automáticamente en dispositivos móviles
-    // o cuando se selecciona una conversación en dispositivos de escritorio
     if (!isMobile) {
-      // En dispositivos de escritorio, mantener el sidebar abierto
-      // incluso cuando no hay conversación seleccionada
       setIsSidebarOpen(true);
     } else if (selectedConversation) {
-      // En móviles, cerrar el sidebar cuando se selecciona una conversación
       setIsSidebarOpen(false);
     }
-    // Ya no cerramos el sidebar cuando selectedConversation es null
   }, [selectedConversation, isMobile]);
 
   useEffect(() => {
@@ -96,6 +107,35 @@ export default function Chat() {
       fetchConversations();
     }
   }, [user, setUser]);
+
+  const handleSpecialtyRecommendation = async (specialty: Specialty | null) => {
+    if (specialty && selectedConversation && user) {
+      setSpecialtyForScheduling(specialty);
+      await editConversation(
+        user.uid,
+        selectedConversation,
+        undefined,
+        "closed"
+      );
+
+      setSelectedConversation((prev) =>
+        prev ? { ...prev, status: "closed" } : null
+      );
+    }
+  };
+
+  const handleDoctorSelected = async (doctor: Doctor) => {
+    setSelectedDoctorForBooking(doctor); // <-- AHORA SÍ SE USA
+    setIsDoctorSelectionOpen(false);
+    setIsSchedulerOpen(true);
+  };
+
+  const handleOpenScheduleFlow = async () => {
+    if (!specialtyForScheduling) return;
+    const doctors = await fetchDoctorsBySpecialty(specialtyForScheduling.id);
+    setDoctorsForSelection(doctors);
+    setIsDoctorSelectionOpen(true);
+  };
 
   const handleBotResponse = async (
     input: string,
@@ -136,15 +176,11 @@ export default function Chat() {
         botReplyContent += chunk; // Construye la respuesta en tiempo real
         updateBotMessageContent(messageId, botReplyContent);
       },
-      onDoctorRecommendation: async (doctor) => {
-        if (doctor) {
-          await handleDoctorRecommendation(doctor);
-        }
-      },
+      onSpecialtyRecommendation: handleSpecialtyRecommendation,
       selectedSpecialty: specialty,
     });
 
-    return botReplyContent; // Respuesta completa del bot
+    return botReplyContent;
   };
 
   const updateMessages = (newMessages: Message[]) => {
@@ -166,30 +202,6 @@ export default function Chat() {
           }
         : prev
     );
-  };
-
-  const handleDoctorRecommendation = async (doctor: Doctor) => {
-    setRecommendedDoctor(doctor);
-
-    if (doctor && selectedConversation) {
-      await addRecommendation(user!.uid, selectedConversation, doctor.uid);
-      editConversation(user!.uid, selectedConversation, undefined, "closed");
-
-      // Actualiza estados de conversación
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === selectedConversation.id
-            ? { ...conv, recommendedDoctorId: doctor.uid, status: "closed" }
-            : conv
-        )
-      );
-
-      setSelectedConversation((prev) =>
-        prev
-          ? { ...prev, recommendedDoctorId: doctor.uid, status: "closed" }
-          : prev
-      );
-    }
   };
 
   const handleSend = async (message: string, specialty: Specialty | null) => {
@@ -372,6 +384,9 @@ export default function Chat() {
               selectedConversation={selectedConversation}
               recommendedDoctor={recommendedDoctor}
               setRecommendedDoctor={setRecommendedDoctor}
+              specialtyForScheduling={specialtyForScheduling}
+              onScheduleClick={handleOpenScheduleFlow}
+              isChatClosed={selectedConversation?.status === "closed"}
             />
           </>
         ) : (
@@ -380,6 +395,60 @@ export default function Chat() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={isDoctorSelectionOpen}
+        onOpenChange={setIsDoctorSelectionOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              Elige un especialista en {specialtyForScheduling?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Estos son los doctores disponibles para la especialidad que
+              necesitas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4 max-h-[60vh] overflow-y-auto">
+            {doctorsForSelection.length > 0 ? (
+              doctorsForSelection.map((doc) => (
+                <div
+                  key={doc.uid}
+                  className="flex justify-between items-center p-3 rounded-lg border hover:bg-gray-50"
+                >
+                  <div>
+                    <p className="font-bold">
+                      {doc.firstName} {doc.lastName}
+                    </p>
+                    <p className="text-sm text-gray-500">{doc.workplace}</p>
+                  </div>
+                  <Button onClick={() => handleDoctorSelected(doc)}>
+                    Agendar Cita
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500">
+                No hay doctores disponibles para esta especialidad en este
+                momento.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para Agendar la Cita */}
+      {selectedDoctorForBooking && user && (
+        <Dialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen}>
+          {/* Este componente lo crearemos a continuación */}
+          <AppointmentScheduler
+            doctor={selectedDoctorForBooking}
+            user={user}
+            onClose={() => setIsSchedulerOpen(false)}
+          />
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -11,7 +11,7 @@ export interface EnviarMensajeProps {
   specialties: Specialty[];
   userInfo: User | null;
   onStreamUpdate: (chunk: string) => void;
-  onDoctorRecommendation?: (doctor: Doctor | null) => void;
+  onSpecialtyRecommendation?: (specialty: Specialty | null) => void;
   selectedSpecialty: Specialty | null;
 }
 

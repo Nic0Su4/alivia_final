@@ -77,12 +77,11 @@ export const enviarMensaje = async ({
   specialties,
   userInfo,
   onStreamUpdate,
-  onDoctorRecommendation,
+  onSpecialtyRecommendation,
   selectedSpecialty,
 }: EnviarMensajeProps) => {
   const specialtiesList = specialties.map((s) => s.name).join(", ");
 
-  // Usamos la función auxiliar para generar el prompt
   const systemPrompt = createSystemPrompt(
     specialtiesList,
     selectedSpecialty,
@@ -123,35 +122,22 @@ export const enviarMensaje = async ({
       );
     }
 
-    if (recommendationMatch && onDoctorRecommendation) {
+    if (recommendationMatch && onSpecialtyRecommendation) {
       const specialtyName = recommendationMatch[1].trim();
       const specialty = specialties.find(
         (s) => s.name.toLowerCase() === specialtyName.toLowerCase()
       );
 
       if (specialty) {
-        const doctors = await fetchDoctorsBySpecialty(specialty.id);
-        if (doctors.length > 0) {
-          const randomIndex = Math.floor(Math.random() * doctors.length);
-          onDoctorRecommendation(doctors[randomIndex]);
-          onStreamUpdate(
-            "\n\n¡Buenas noticias! He encontrado un especialista que puede ayudarte. Dale click al botón al lado de enviar para ver los datos del doctor"
-          );
-        } else {
-          onStreamUpdate(
-            `\n\nEn este momento no hay especialistas en ${specialtyName} disponibles. Te recomendamos contactar con tu centro de salud.`
-          );
-          onDoctorRecommendation(null);
-        }
+        onSpecialtyRecommendation(specialty);
       } else {
         onStreamUpdate(
-          `\n\nLa especialidad "${specialtyName}" no está disponible.`
+          `\n\nLa especialidad "${specialtyName}" no está disponible. Por favor, consulta con tu médico de cabecera.`
         );
-        onDoctorRecommendation(null);
+        onSpecialtyRecommendation(null);
       }
     }
   } catch (error: unknown) {
-    // Usamos 'unknown' para un manejo de errores más seguro
     let errorMessage = "Error al obtener la respuesta de OpenAI";
     if (error instanceof Error) {
       errorMessage = error.message;
