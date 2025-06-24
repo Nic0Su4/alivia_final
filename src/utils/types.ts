@@ -31,6 +31,16 @@ export type User = {
   summaryHistory?: string;
 };
 
+export type TimeSlot = {
+  start: string; // ej: "09:00"
+  end: string; // ej: "13:00"
+};
+
+export type WorkDay = {
+  dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  slots: TimeSlot[];
+};
+
 export type Doctor = {
   uid: string;
   firstName: string;
@@ -41,6 +51,7 @@ export type Doctor = {
   contactNumber: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  workingHours?: WorkDay[];
 };
 
 export type Admin = {
@@ -53,4 +64,15 @@ export type Admin = {
 export type Specialty = {
   id: string;
   name: string;
+};
+
+export type Appointment = {
+  id: string;
+  userId: string;
+  userName: string;
+  doctorId: string;
+  doctorName: string;
+  appointmentDate: Timestamp;
+  status: "pending" | "confirmed" | "declined" | "completed";
+  createdAt: Timestamp;
 };
