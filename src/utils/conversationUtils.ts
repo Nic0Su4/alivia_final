@@ -28,6 +28,7 @@ export const createConversation = async (
     messages: [],
     status: "open",
     recommendedSpecialty: null,
+    appointmentId: null,
   };
 
   await setDoc(doc(userConversationsRef, newConversation.id), newConversation);

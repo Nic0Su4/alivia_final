@@ -142,7 +142,7 @@ export default function MessageInput({
           )}
 
           {isChatClosed && hasAppointment && (
-            <Button disabled variant="secondary">
+            <Button disabled variant="secondary" className="ml-2">
               Cita Agendada
             </Button>
           )}

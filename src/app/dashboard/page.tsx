@@ -450,6 +450,8 @@ export default function Chat() {
             user={user}
             onClose={() => setIsSchedulerOpen(false)}
             conversationId={selectedConversation.id}
+            selectedConversation={selectedConversation}
+            setSelectedConversation={setSelectedConversation}
           />
         </Dialog>
       )}

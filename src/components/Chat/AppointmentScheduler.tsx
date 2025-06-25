@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Doctor, User } from "@/utils/types";
+import { Conversation, Doctor, User } from "@/utils/types";
 import {
   getDoctorAvailability,
   createAppointment,
@@ -29,6 +29,8 @@ interface AppointmentSchedulerProps {
   user: User;
   onClose: () => void;
   conversationId: string;
+  selectedConversation: Conversation;
+  setSelectedConversation: (conversation: Conversation | null) => void;
 }
 
 export const AppointmentScheduler = ({
@@ -36,6 +38,8 @@ export const AppointmentScheduler = ({
   user,
   onClose,
   conversationId,
+  selectedConversation,
+  setSelectedConversation,
 }: AppointmentSchedulerProps) => {
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
@@ -74,7 +78,7 @@ export const AppointmentScheduler = ({
     const appointmentDateTime = new Date(`${selectedDate}T${time}:00.000Z`);
 
     try {
-      await createAppointment(
+      const appointmentId = await createAppointment(
         {
           userId: user.uid,
           userName: user.displayName,
@@ -87,6 +91,14 @@ export const AppointmentScheduler = ({
         user.uid,
         conversationId
       );
+
+      // Actualizamos el frontend
+      setSelectedConversation({
+        ...selectedConversation,
+        status: "closed",
+        appointmentId: appointmentId,
+      });
+
       toast.success("Solicitud de cita enviada", {
         description: `Tu solicitud para el ${new Date(
           appointmentDateTime
