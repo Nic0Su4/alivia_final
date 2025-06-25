@@ -21,7 +21,7 @@ import {
   enviarMensaje,
   iniciarChat,
 } from "@/utils/OpenAI/openaiGenerativeUtils";
-import { getDoctorById, fetchDoctorsBySpecialty } from "@/utils/doctorUtils";
+import { fetchDoctorsBySpecialty } from "@/utils/doctorUtils";
 import WellcomeNew from "@/components/ui/WellcomeScreen";
 import BrainLoadingScreen from "@/components/ui/loading";
 import { getSpecialties } from "@/utils/specialtiesUtils";

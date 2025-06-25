@@ -169,6 +169,7 @@ export const fetchDoctorsBySpecialty = async (
         contactNumber: data.contactNumber,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
+        workingHours: data.workingHours,
       };
     });
   } catch (error) {

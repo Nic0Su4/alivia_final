@@ -79,64 +79,87 @@ export const updateAppointmentStatus = async (
  */
 export const getDoctorAvailability = async (
   doctor: Doctor,
-  date: Date
+  dateString: string
 ): Promise<string[]> => {
-  // 1. Obtener los horarios de trabajo del doctor para ese día de la semana
-  const dayOfWeek = date.getDay(); // Domingo = 0, Lunes = 1, etc.
+  // --- Paso 1 de depuración: Ver los datos de entrada ---
+  console.log("--- Iniciando getDoctorAvailability ---");
+  console.log("Buscando para Doctor ID:", doctor.uid);
+  console.log("Fecha solicitada (string):", dateString);
+  console.log("Horarios de trabajo del doctor:", doctor.workingHours);
+  console.log("doctor", doctor);
+
+  if (!dateString) return [];
+
+  const targetDate = new Date(`${dateString}T00:00:00.000Z`);
+  const dayOfWeek = targetDate.getUTCDay();
+
   const workingDay = doctor.workingHours?.find(
     (d) => d.dayOfWeek === dayOfWeek
   );
 
-  // Si el doctor no trabaja ese día, devolver un array vacío
+  console.log(
+    `Día de la semana (0-6): ${dayOfWeek}. ¿Se encontró horario laboral?`,
+    !!workingDay
+  );
+
   if (!workingDay || !workingDay.slots || workingDay.slots.length === 0) {
+    console.log("--- Finalizando: No hay horario laboral para este día. ---");
     return [];
   }
 
-  // 2. Obtener las citas ya confirmadas para ese día específico
-  const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+  const startOfDay = Timestamp.fromDate(
+    new Date(`${dateString}T00:00:00.000Z`)
+  );
+  const endOfDay = Timestamp.fromDate(new Date(`${dateString}T23:59:59.999Z`));
 
   const appointmentsQuery = query(
     collection(db, "appointments"),
     where("doctorId", "==", doctor.uid),
     where("status", "==", "confirmed"),
-    where("appointmentDate", ">=", Timestamp.fromDate(startOfDay)),
-    where("appointmentDate", "<=", Timestamp.fromDate(endOfDay))
+    where("appointmentDate", ">=", startOfDay),
+    where("appointmentDate", "<=", endOfDay)
   );
 
   const snapshot = await getDocs(appointmentsQuery);
   const bookedTimes = new Set(
     snapshot.docs.map((doc) => {
       const data = doc.data() as Appointment;
-      // Formatear la hora a HH:mm para comparar fácilmente
-      return data.appointmentDate
-        .toDate()
-        .toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+      return data.appointmentDate.toDate().toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "UTC",
+      });
     })
   );
 
-  // 3. Generar todos los slots posibles y filtrar los ocupados
+  console.log("Horarios ya reservados:", Array.from(bookedTimes));
+
   const availableSlots: string[] = [];
-  const slotDuration = 30; // Duración de cada cita en minutos
+  const slotDuration = 30;
 
   for (const slot of workingDay.slots) {
-    const startTime = new Date(`${date.toDateString()} ${slot.start}`);
-    const endTime = new Date(`${date.toDateString()} ${slot.end}`);
+    const startTime = new Date(`${dateString}T${slot.start}:00.000Z`);
+    const endTime = new Date(`${dateString}T${slot.end}:00.000Z`);
 
-    const currentSlot = startTime;
-    while (currentSlot < endTime) {
+    // --- CORRECCIÓN CLAVE: Usamos un bucle `for` para evitar la mutación del objeto original ---
+    for (
+      let currentSlot = new Date(startTime); // Creamos una copia para el iterador
+      currentSlot < endTime;
+      currentSlot.setUTCMinutes(currentSlot.getUTCMinutes() + slotDuration)
+    ) {
       const formattedTime = currentSlot.toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
+        timeZone: "UTC",
       });
 
       if (!bookedTimes.has(formattedTime)) {
         availableSlots.push(formattedTime);
       }
-
-      currentSlot.setMinutes(currentSlot.getMinutes() + slotDuration);
     }
   }
 
+  console.log("Horarios disponibles calculados:", availableSlots);
+  console.log("--- Finalizando getDoctorAvailability ---");
   return availableSlots;
 };
