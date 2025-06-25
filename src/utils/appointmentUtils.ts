@@ -3,31 +3,55 @@
 import { db } from "@/firebase/config";
 import {
   collection,
-  addDoc,
   query,
   where,
   getDocs,
   doc,
   updateDoc,
   Timestamp,
+  limit,
+  runTransaction,
 } from "firebase/firestore";
 import { Appointment, Doctor } from "./types";
 
 /**
- * Crea una nueva solicitud de cita en la base de datos.
+ * Crea una nueva cita y la vincula a una conversación usando una transacción.
  * @param appointmentData - La información de la cita a crear.
+ * @param userId - El ID del usuario.
+ * @param conversationId - El ID de la conversación a la que se vinculará la cita.
  * @returns El ID de la nueva cita.
  */
 export const createAppointment = async (
-  appointmentData: Omit<Appointment, "id">
+  appointmentData: Omit<Appointment, "id">,
+  userId: string,
+  conversationId: string
 ): Promise<string> => {
+  const appointmentRef = doc(collection(db, "appointments"));
+  const conversationRef = doc(
+    db,
+    "users",
+    userId,
+    "conversations",
+    conversationId
+  );
+
   try {
-    const appointmentsRef = collection(db, "appointments");
-    const docRef = await addDoc(appointmentsRef, appointmentData);
-    await updateDoc(docRef, { id: docRef.id });
-    return docRef.id;
+    await runTransaction(db, async (transaction) => {
+      // 1. Crear la nueva cita
+      transaction.set(appointmentRef, {
+        ...appointmentData,
+        id: appointmentRef.id,
+      });
+
+      // 2. Actualizar la conversación para vincularla con la cita
+      transaction.update(conversationRef, {
+        appointmentId: appointmentRef.id,
+      });
+    });
+
+    return appointmentRef.id;
   } catch (error) {
-    console.error("Error al crear la cita:", error);
+    console.error("Error en la transacción de creación de cita:", error);
     throw new Error("No se pudo crear la solicitud de cita.");
   }
 };
@@ -81,13 +105,6 @@ export const getDoctorAvailability = async (
   doctor: Doctor,
   dateString: string
 ): Promise<string[]> => {
-  // --- Paso 1 de depuración: Ver los datos de entrada ---
-  console.log("--- Iniciando getDoctorAvailability ---");
-  console.log("Buscando para Doctor ID:", doctor.uid);
-  console.log("Fecha solicitada (string):", dateString);
-  console.log("Horarios de trabajo del doctor:", doctor.workingHours);
-  console.log("doctor", doctor);
-
   if (!dateString) return [];
 
   const targetDate = new Date(`${dateString}T00:00:00.000Z`);
@@ -115,7 +132,7 @@ export const getDoctorAvailability = async (
   const appointmentsQuery = query(
     collection(db, "appointments"),
     where("doctorId", "==", doctor.uid),
-    where("status", "==", "confirmed"),
+    where("status", "in", ["pending", "confirmed"]),
     where("appointmentDate", ">=", startOfDay),
     where("appointmentDate", "<=", endOfDay)
   );
@@ -132,8 +149,6 @@ export const getDoctorAvailability = async (
     })
   );
 
-  console.log("Horarios ya reservados:", Array.from(bookedTimes));
-
   const availableSlots: string[] = [];
   const slotDuration = 30;
 
@@ -141,9 +156,8 @@ export const getDoctorAvailability = async (
     const startTime = new Date(`${dateString}T${slot.start}:00.000Z`);
     const endTime = new Date(`${dateString}T${slot.end}:00.000Z`);
 
-    // --- CORRECCIÓN CLAVE: Usamos un bucle `for` para evitar la mutación del objeto original ---
     for (
-      let currentSlot = new Date(startTime); // Creamos una copia para el iterador
+      let currentSlot = new Date(startTime);
       currentSlot < endTime;
       currentSlot.setUTCMinutes(currentSlot.getUTCMinutes() + slotDuration)
     ) {
@@ -162,4 +176,31 @@ export const getDoctorAvailability = async (
   console.log("Horarios disponibles calculados:", availableSlots);
   console.log("--- Finalizando getDoctorAvailability ---");
   return availableSlots;
+};
+
+/**
+ * Verifica si un usuario ya tiene una cita pendiente o confirmada con un doctor.
+ * @param userId El UID del usuario.
+ * @param doctorId El UID del doctor.
+ * @returns `true` si ya existe una cita, `false` en caso contrario.
+ */
+export const checkExistingAppointment = async (
+  userId: string,
+  doctorId: string
+): Promise<boolean> => {
+  try {
+    const q = query(
+      collection(db, "appointments"),
+      where("userId", "==", userId),
+      where("doctorId", "==", doctorId),
+      where("status", "in", ["pending", "confirmed"]),
+      limit(1)
+    );
+
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  } catch (error) {
+    console.error("Error al verificar cita existente:", error);
+    return false;
+  }
 };

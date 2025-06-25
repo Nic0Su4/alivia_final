@@ -18,6 +18,7 @@ export type Conversation = {
   messages: Message[];
   status: "open" | "closed";
   recommendedSpecialty: Specialty | null;
+  appointmentId?: string | null;
 };
 
 export type User = {

@@ -44,9 +44,6 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [recommendedDoctor, setRecommendedDoctor] = useState<Doctor | null>(
-    null
-  );
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -389,11 +386,10 @@ export default function Chat() {
               input={input}
               setInput={setInput}
               selectedConversation={selectedConversation}
-              recommendedDoctor={recommendedDoctor}
-              setRecommendedDoctor={setRecommendedDoctor}
               specialtyForScheduling={specialtyForScheduling}
               onScheduleClick={handleOpenScheduleFlow}
               isChatClosed={selectedConversation?.status === "closed"}
+              hasAppointment={!!selectedConversation.appointmentId}
             />
           </>
         ) : (
@@ -446,13 +442,14 @@ export default function Chat() {
       </Dialog>
 
       {/* Modal para Agendar la Cita */}
-      {selectedDoctorForBooking && user && (
+      {selectedDoctorForBooking && user && selectedConversation && (
         <Dialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen}>
           {/* Este componente lo crearemos a continuación */}
           <AppointmentScheduler
             doctor={selectedDoctorForBooking}
             user={user}
             onClose={() => setIsSchedulerOpen(false)}
+            conversationId={selectedConversation.id}
           />
         </Dialog>
       )}

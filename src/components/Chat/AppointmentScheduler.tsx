@@ -7,6 +7,7 @@ import { Doctor, User } from "@/utils/types";
 import {
   getDoctorAvailability,
   createAppointment,
+  checkExistingAppointment,
 } from "@/utils/appointmentUtils"; // Necesitarás este archivo
 import {
   DialogContent,
@@ -21,17 +22,20 @@ import { Input } from "../ui/input";
 import { Timestamp } from "firebase/firestore";
 import { toast } from "sonner";
 import { Spinner } from "../ui/spinner";
+import { AlertCircle } from "lucide-react";
 
 interface AppointmentSchedulerProps {
   doctor: Doctor;
   user: User;
   onClose: () => void;
+  conversationId: string;
 }
 
 export const AppointmentScheduler = ({
   doctor,
   user,
   onClose,
+  conversationId,
 }: AppointmentSchedulerProps) => {
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
@@ -40,34 +44,49 @@ export const AppointmentScheduler = ({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState(false);
 
+  const [hasExistingAppointment, setHasExistingAppointment] =
+    useState<boolean>(false);
+
   useEffect(() => {
-    const fetchAvailability = async () => {
-      setLoadingSlots(true);
-      // --- MODIFICADO: Pasamos el string de la fecha directamente ---
-      const slots = await getDoctorAvailability(doctor, selectedDate);
-      setAvailableSlots(slots);
-      setLoadingSlots(false);
+    const checkAndFetch = async () => {
+      const existing = await checkExistingAppointment(user.uid, doctor.uid);
+      if (existing) {
+        setHasExistingAppointment(true);
+        setLoadingSlots(false);
+        return;
+      }
+
+      setHasExistingAppointment(false);
+
+      if (selectedDate) {
+        setLoadingSlots(true);
+        const slots = await getDoctorAvailability(doctor, selectedDate);
+        setAvailableSlots(slots);
+        setLoadingSlots(false);
+      }
     };
 
-    if (selectedDate) {
-      fetchAvailability();
-    }
-  }, [selectedDate, doctor]);
+    checkAndFetch();
+  }, [selectedDate, doctor, user.uid]);
 
   const handleBookAppointment = async (time: string) => {
     setBooking(true);
     const appointmentDateTime = new Date(`${selectedDate}T${time}:00.000Z`);
 
     try {
-      await createAppointment({
-        userId: user.uid,
-        userName: user.displayName,
-        doctorId: doctor.uid,
-        doctorName: `Dr. ${doctor.firstName} ${doctor.lastName}`,
-        appointmentDate: Timestamp.fromDate(appointmentDateTime),
-        status: "pending",
-        createdAt: Timestamp.now(),
-      });
+      await createAppointment(
+        {
+          userId: user.uid,
+          userName: user.displayName,
+          doctorId: doctor.uid,
+          doctorName: `Dr. ${doctor.firstName} ${doctor.lastName}`,
+          appointmentDate: Timestamp.fromDate(appointmentDateTime),
+          status: "pending",
+          createdAt: Timestamp.now(),
+        },
+        user.uid,
+        conversationId
+      );
       toast.success("Solicitud de cita enviada", {
         description: `Tu solicitud para el ${new Date(
           appointmentDateTime
@@ -95,35 +114,50 @@ export const AppointmentScheduler = ({
         </DialogDescription>
       </DialogHeader>
       <div className="py-4 space-y-4">
-        <Input
-          type="date"
-          onChange={(e) => setSelectedDate(e.target.value)}
-          defaultValue={new Date().toISOString().split("T")[0]}
-          min={new Date().toISOString().split("T")[0]}
-        />
-        {loadingSlots ? (
-          <div className="flex justify-center items-center h-32">
-            <Spinner />
+        {hasExistingAppointment ? (
+          <div className="flex flex-col items-center justify-center text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <AlertCircle className="w-8 h-8 text-yellow-500 mb-2" />
+            <p className="font-semibold">
+              Ya tienes una cita pendiente o confirmada con este doctor.
+            </p>
+            <p className="text-sm text-gray-600">
+              Por favor, espera la confirmación o revisa el estado de tu cita en
+              tu perfil.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-1">
-            {availableSlots.length > 0 ? (
-              availableSlots.map((time) => (
-                <Button
-                  key={time}
-                  variant="outline"
-                  onClick={() => handleBookAppointment(time)}
-                  disabled={booking}
-                >
-                  {time}
-                </Button>
-              ))
+          <>
+            <Input
+              type="date"
+              onChange={(e) => setSelectedDate(e.target.value)}
+              defaultValue={new Date().toISOString().split("T")[0]}
+              min={new Date().toISOString().split("T")[0]}
+            />
+            {loadingSlots ? (
+              <div className="flex justify-center items-center h-32">
+                <Spinner />
+              </div>
             ) : (
-              <p className="col-span-full text-center text-gray-500 py-8">
-                No hay horarios disponibles para este día.
-              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-1">
+                {availableSlots.length > 0 ? (
+                  availableSlots.map((time) => (
+                    <Button
+                      key={time}
+                      variant="outline"
+                      onClick={() => handleBookAppointment(time)}
+                      disabled={booking}
+                    >
+                      {time}
+                    </Button>
+                  ))
+                ) : (
+                  <p className="col-span-full text-center text-gray-500 py-8">
+                    No hay horarios disponibles para este día.
+                  </p>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
       {booking && (
