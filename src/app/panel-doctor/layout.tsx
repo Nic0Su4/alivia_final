@@ -1,7 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { BarChart, Calendar, LogOut, Users, Clock } from "lucide-react";
+import {
+  BarChart,
+  Calendar,
+  LogOut,
+  Users,
+  Clock,
+  CalendarClock,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect, usePathname } from "next/navigation";
 
@@ -38,6 +45,20 @@ export default function PanelDoctorLayout({
               Dashboard
             </Button>
           </Link>
+
+          <Link href={"/panel-doctor/appointments"}>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start ${isActiveLink(
+                "appointments" // <-- El path a verificar
+              )}`}
+            >
+              <CalendarClock className="mr-2 h-5 w-5" />{" "}
+              {/* Ícono actualizado */}
+              Gestión de Citas
+            </Button>
+          </Link>
+
           <Link href={"/panel-doctor/schedule"}>
             <Button
               variant="ghost"
