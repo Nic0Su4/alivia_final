@@ -82,7 +82,7 @@ export default function PanelDoctor() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Número de recomendaciones
+              Citas Solicitadas
             </CardTitle>
             <Users className="h-5 w-5 text-[#49deb8]" />
           </CardHeader>
@@ -99,7 +99,7 @@ export default function PanelDoctor() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Ultimo Paciente Recomendado
+              Último Paciente Agendado
             </CardTitle>
             <User1 className="h-5 w-5 text-[#49deb8]" />
           </CardHeader>
@@ -116,7 +116,7 @@ export default function PanelDoctor() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Número de recomendaciones a usuarios únicos
+              Total de Pacientes
             </CardTitle>
             <BarChart className="h-5 w-5 text-[#49deb8]" />
           </CardHeader>
@@ -138,7 +138,7 @@ export default function PanelDoctor() {
       <div className="mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Últimos 10 Pacientes Recomendados</CardTitle>
+            <CardTitle>Últimos Pacientes Atendidos</CardTitle>
           </CardHeader>
           <CardContent>
             {!loading ? (

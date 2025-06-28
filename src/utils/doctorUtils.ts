@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   collection,
-  collectionGroup,
   doc,
   getCountFromServer,
   getDoc,
@@ -13,7 +12,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { Doctor, User } from "./types";
+import { Appointment, Doctor, User } from "./types";
 import { db } from "@/firebase/config";
 
 export interface PatientStats {
@@ -59,11 +58,9 @@ const getAgeGroup = (age: number): AgeGroup => {
 export const getDoctorPatientStats = async (
   doctorId: string
 ): Promise<PatientStats> => {
-  // 1. Reutilizamos la función que ya tienes para obtener todos los pacientes
   const patients = await fetchUserListForDoctor(doctorId);
   const totalPatients = patients.length;
 
-  // Si no hay pacientes, devolvemos estadísticas en cero.
   if (totalPatients === 0) {
     return {
       totalPatients: 0,
@@ -72,13 +69,10 @@ export const getDoctorPatientStats = async (
     };
   }
 
-  // 2. Inicializamos contadores
   const genderCounts = { masculino: 0, femenino: 0, otro: 0 };
   const ageCounts = { nino: 0, joven: 0, adulto: 0, adultoMayor: 0 };
 
-  // 3. Procesamos cada paciente para contar
   for (const patient of patients) {
-    // Conteo por género
     switch (patient.gender) {
       case "Masculino":
         genderCounts.masculino++;
@@ -91,13 +85,11 @@ export const getDoctorPatientStats = async (
         break;
     }
 
-    // Conteo por edad
     const age = calculateAge(patient.birthDate);
     const ageGroup = getAgeGroup(age);
     ageCounts[ageGroup]++;
   }
 
-  // 4. Calculamos y devolvemos los porcentajes
   return {
     totalPatients,
     genderDistribution: {
@@ -216,8 +208,9 @@ export const fetchConversationsForDoctor = async (
 ): Promise<number> => {
   try {
     let q = query(
-      collectionGroup(db, "conversations"),
-      where("recommendedDoctorId", "==", doctorId)
+      collection(db, "appointments"),
+      where("doctorId", "==", doctorId),
+      where("status", "in", ["pending", "confirmed"])
     );
 
     if (startDate) {
@@ -243,8 +236,8 @@ export const fetchUniqueUsersForDoctor = async (
 ): Promise<number> => {
   try {
     let q = query(
-      collectionGroup(db, "conversations"),
-      where("recommendedDoctorId", "==", doctorId)
+      collection(db, "appointments"),
+      where("doctorId", "==", doctorId)
     );
 
     if (startDate) {
@@ -254,16 +247,12 @@ export const fetchUniqueUsersForDoctor = async (
       q = query(q, where("createdAt", "<=", Timestamp.fromDate(endDate)));
     }
 
-    const conversationsSnapshot = await getDocs(q);
-    const uniqueUsers = new Set<string>();
+    const snapshot = await getDocs(q);
+    const uniqueUserIds = new Set<string>(
+      snapshot.docs.map((doc) => (doc.data() as Appointment).userId)
+    );
 
-    conversationsSnapshot.forEach((conversationDoc) => {
-      const conversation = conversationDoc.data();
-      const userId = conversation.userId;
-      uniqueUsers.add(userId);
-    });
-
-    return uniqueUsers.size;
+    return uniqueUserIds.size;
   } catch (error) {
     console.error("Error al obtener usuarios únicos para el doctor:", error);
     throw new Error("No se pudieron obtener los usuarios únicos.");
@@ -275,38 +264,30 @@ export const fetchLastUserForDoctor = async (
 ): Promise<User | null> => {
   try {
     const q = query(
-      collectionGroup(db, "conversations"),
-      where("recommendedDoctorId", "==", doctorId),
-      orderBy("updatedAt", "desc"),
+      collection(db, "appointments"),
+      where("doctorId", "==", doctorId),
+      orderBy("createdAt", "desc"),
       limit(1)
     );
 
-    const conversationSnap = await getDocs(q);
+    const appointmentSnap = await getDocs(q);
 
-    if (conversationSnap.empty) {
+    if (appointmentSnap.empty) {
       return null;
     }
 
-    const lastConversation = conversationSnap.docs[0].data();
-    const userId = lastConversation.userId;
-
-    if (!userId) {
-      throw new Error("La conversación no tiene un ID de usuario asociado.");
-    }
-
-    const userDocRef = doc(db, "users", userId);
+    const lastAppointment = appointmentSnap.docs[0].data() as Appointment;
+    const userDocRef = doc(db, "users", lastAppointment.userId);
     const userDocSnap = await getDoc(userDocRef);
 
-    if (!userDocSnap.exists()) {
-      return null;
-    }
+    if (!userDocSnap.exists()) return null;
 
     const userData = userDocSnap.data();
     return {
       uid: userDocSnap.id,
       displayName: userData.displayName,
       email: userData.email,
-      createdAt: userData.createdAt.toDate(),
+      createdAt: userData.createdAt,
       phoneNumber: userData.phoneNumber,
       birthDate: userData.birthDate,
       gender: userData.gender,
@@ -326,8 +307,8 @@ export const fetchUserListForDoctor = async (
 ): Promise<User[]> => {
   try {
     let q = query(
-      collectionGroup(db, "conversations"),
-      where("recommendedDoctorId", "==", doctorId)
+      collection(db, "appointments"),
+      where("doctorId", "==", doctorId)
     );
 
     if (startDate) {
@@ -337,43 +318,25 @@ export const fetchUserListForDoctor = async (
       q = query(q, where("createdAt", "<=", Timestamp.fromDate(endDate)));
     }
 
-    const conversationsSnapshot = await getDocs(q);
-    const userIds = new Set<string>();
-
-    conversationsSnapshot.forEach((doc) => {
-      userIds.add(doc.data().userId);
-    });
-
-    const userFetchPromises: Promise<User | null>[] = [];
+    const appointmentsSnapshot = await getDocs(q);
+    const userIds = new Set<string>(
+      appointmentsSnapshot.docs.map((doc) => (doc.data() as Appointment).userId)
+    );
 
     let userIdsToFetch = Array.from(userIds);
     if (limitResults) {
       userIdsToFetch = userIdsToFetch.slice(0, limitResults);
     }
 
-    for (const userId of userIdsToFetch) {
-      const userDocRef = doc(db, "users", userId);
-      userFetchPromises.push(
-        getDoc(userDocRef).then((userDoc) => {
-          if (!userDoc.exists()) return null;
-          const userData = userDoc.data();
-          return {
-            uid: userDoc.id,
-            displayName: userData.displayName,
-            email: userData.email,
-            createdAt: userData.createdAt.toDate(),
-            phoneNumber: userData.phoneNumber,
-            birthDate: userData.birthDate,
-            gender: userData.gender,
-            summaryHistory: userData.summaryHistory,
-          };
-        })
-      );
-    }
+    if (userIdsToFetch.length === 0) return [];
 
-    const resolvedUsers = await Promise.all(userFetchPromises);
+    const usersQuery = query(
+      collection(db, "users"),
+      where("uid", "in", userIdsToFetch)
+    );
+    const usersSnapshot = await getDocs(usersQuery);
 
-    return resolvedUsers.filter((user): user is User => user !== null);
+    return usersSnapshot.docs.map((doc) => doc.data() as User);
   } catch (error) {
     console.error(
       "Error al obtener la lista de usuarios para el doctor:",
