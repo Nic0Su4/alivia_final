@@ -37,14 +37,6 @@ const LandingPage = () => {
               Comenzar ahora
             </Button>
           </Link>
-          <Link href={"/register-medico"}>
-            <Button
-              variant="outline"
-              className="w-full border-2 border-emerald-500/50 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-600 font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all duration-300 transform hover:scale-[1.02]"
-            >
-              Soy médico
-            </Button>
-          </Link>
         </div>
 
         <div className="text-center">
