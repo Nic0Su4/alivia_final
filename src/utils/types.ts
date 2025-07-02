@@ -53,6 +53,8 @@ export type Doctor = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   workingHours?: WorkDay[];
+  averageRating?: number;
+  ratingCount?: number;
 };
 
 export type Admin = {
@@ -76,4 +78,16 @@ export type Appointment = {
   appointmentDate: Timestamp;
   status: "pending" | "confirmed" | "declined" | "completed";
   createdAt: Timestamp;
+  isRated?: boolean;
+};
+
+export type Rating = {
+  id: string;
+  appointmentId: string;
+  fromUserId: string;
+  toUserId: string;
+  rating: number;
+  comment: string;
+  createdAt: Timestamp;
+  type: "patient_to_doctor" | "doctor_to_patient";
 };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUserStore } from "@/store/user";
-import { User, Appointment } from "@/utils/types";
+import { User, Appointment, Rating } from "@/utils/types";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,15 +16,21 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { getAppointmentsForUser } from "@/utils/appointmentUtils";
+import {
+  getAppointmentsForUser,
+  submitRatingAndUpdateDoctor,
+} from "@/utils/appointmentUtils";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RatingDialog } from "@/components/Chat/RatingDialog";
 
 export default function MyAppointmentsPage() {
   const user = useUserStore((state) => state.user) as User | null;
   const setUser = useUserStore((state) => state.setUser);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,6 +64,40 @@ export default function MyAppointmentsPage() {
 
     fetchAppointments();
   }, [user]);
+
+  const handleOpenRatingDialog = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+  };
+
+  const handleCloseRatingDialog = () => {
+    setSelectedAppointment(null);
+  };
+
+  const handleRatingSubmit = async (
+    ratingData: Omit<Rating, "id" | "createdAt">
+  ) => {
+    setLoading(true);
+    try {
+      await submitRatingAndUpdateDoctor(ratingData);
+      toast.success("¡Gracias por tu opinión!", {
+        description: "Tu calificación ha sido enviada.",
+      });
+      setAppointments((prev) =>
+        prev.map((apt) =>
+          apt.id === ratingData.appointmentId ? { ...apt, isRated: true } : apt
+        )
+      );
+    } catch (error) {
+      console.error("Failed to submit rating:", error);
+      toast.error("Error al enviar calificación", {
+        description:
+          "No se pudo guardar tu opinión. Por favor, intenta de nuevo.",
+      });
+    } finally {
+      setLoading(false);
+      handleCloseRatingDialog(); // Cerrar el modal
+    }
+  };
 
   const getStatusBadge = (status: Appointment["status"]) => {
     switch (status) {
@@ -103,6 +143,7 @@ export default function MyAppointmentsPage() {
                   <TableHead>Doctor</TableHead>
                   <TableHead>Fecha de la Cita</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -116,6 +157,17 @@ export default function MyAppointmentsPage() {
                         {apt.appointmentDate.toDate().toLocaleString("es-PE")}
                       </TableCell>
                       <TableCell>{getStatusBadge(apt.status)}</TableCell>
+                      <TableCell className="text-right">
+                        {apt.status === "completed" && !apt.isRated && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenRatingDialog(apt)}
+                          >
+                            Calificar
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -130,6 +182,16 @@ export default function MyAppointmentsPage() {
           )}
         </CardContent>
       </Card>
+
+      {user && (
+        <RatingDialog
+          isOpen={!!selectedAppointment}
+          onClose={handleCloseRatingDialog}
+          appointment={selectedAppointment}
+          user={user}
+          onSubmit={handleRatingSubmit}
+        />
+      )}
     </div>
   );
 }

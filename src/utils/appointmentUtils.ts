@@ -13,7 +13,7 @@ import {
   runTransaction,
   orderBy,
 } from "firebase/firestore";
-import { Appointment, Doctor } from "./types";
+import { Appointment, Doctor, Rating } from "./types";
 
 /**
  * Crea una nueva cita y la vincula a una conversación usando una transacción.
@@ -115,11 +115,6 @@ export const getDoctorAvailability = async (
     (d) => d.dayOfWeek === dayOfWeek
   );
 
-  console.log(
-    `Día de la semana (0-6): ${dayOfWeek}. ¿Se encontró horario laboral?`,
-    !!workingDay
-  );
-
   if (!workingDay || !workingDay.slots || workingDay.slots.length === 0) {
     console.log("--- Finalizando: No hay horario laboral para este día. ---");
     return [];
@@ -217,25 +212,65 @@ export const getAppointmentsForUser = async (
   appointmentLimit: number
 ): Promise<Appointment[]> => {
   try {
-    // 1. Creamos una consulta a la colección 'appointments'.
     const appointmentsQuery = query(
       collection(db, "appointments"),
-      // 2. Filtramos los documentos donde el campo 'userId' coincida con el ID proporcionado.
       where("userId", "==", userId),
-      // 3. Ordenamos las citas por fecha de creación, de más reciente a más antigua.
       orderBy("createdAt", "desc"),
-      // 4. Limítamos a 10 citas (puedes ajustar este número según tus necesidades).
       limit(appointmentLimit)
     );
 
-    // 4. Ejecutamos la consulta.
     const snapshot = await getDocs(appointmentsQuery);
 
-    // 5. Mapeamos los resultados al tipo 'Appointment'.
     return snapshot.docs.map((doc) => doc.data() as Appointment);
   } catch (error) {
     console.error("Error al obtener las citas del usuario:", error);
-    // 6. En caso de error, lanzamos una excepción para que el componente que llama pueda manejarla.
     throw new Error("No se pudieron obtener las citas.");
+  }
+};
+
+/**
+ * Guarda una nueva calificación y actualiza el rating promedio del doctor
+ * utilizando una transacción para garantizar la consistencia de los datos.
+ * @param ratingData Los datos de la calificación a guardar.
+ */
+export const submitRatingAndUpdateDoctor = async (
+  ratingData: Omit<Rating, "id" | "createdAt">
+): Promise<void> => {
+  const ratingRef = doc(collection(db, "ratings"));
+  const doctorRef = doc(db, "doctors", ratingData.toUserId);
+  const appointmentRef = doc(db, "appointments", ratingData.appointmentId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const doctorDoc = await transaction.get(doctorRef);
+
+      if (!doctorDoc.exists()) {
+        throw new Error("El doctor no existe.");
+      }
+
+      const doctorData = doctorDoc.data() as Doctor;
+
+      const currentRating = doctorData.averageRating || 0;
+      const ratingCount = doctorData.ratingCount || 0;
+      const newRatingCount = ratingCount + 1;
+      const newAverageRating =
+        (currentRating * ratingCount + ratingData.rating) / newRatingCount;
+
+      transaction.set(ratingRef, {
+        ...ratingData,
+        id: ratingRef.id,
+        createdAt: Timestamp.now(),
+      });
+
+      transaction.update(doctorRef, {
+        averageRating: parseFloat(newAverageRating.toFixed(2)), // Redondear a 2 decimales
+        ratingCount: newRatingCount,
+      });
+
+      transaction.update(appointmentRef, { isRated: true });
+    });
+  } catch (error) {
+    console.error("Error al enviar la calificación:", error);
+    throw new Error("No se pudo guardar la calificación. Inténtalo de nuevo.");
   }
 };
