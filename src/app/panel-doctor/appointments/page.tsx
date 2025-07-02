@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { CheckCircle2 } from "lucide-react";
 
 export default function DoctorAppointmentsPage() {
   const doctor = useDoctorStore((state) => state.doctor) as Doctor | null;
@@ -68,16 +69,20 @@ export default function DoctorAppointmentsPage() {
 
   const handleUpdateStatus = async (
     appointmentId: string,
-    status: "confirmed" | "declined"
+    status: "confirmed" | "declined" | "completed"
   ) => {
     try {
       await updateAppointmentStatus(appointmentId, status);
+      const toastMessage = `La cita ha sido marcada como ${
+        status === "confirmed"
+          ? "confirmada"
+          : status === "declined"
+          ? "rechazada"
+          : "completada"
+      }.`;
       toast.success("Cita actualizada", {
-        description: `La cita ha sido marcada como ${
-          status === "confirmed" ? "confirmada" : "rechazada"
-        }.`,
+        description: toastMessage,
       });
-      // Volver a cargar las citas para reflejar el cambio
       fetchAppointments();
     } catch (error) {
       console.error("Error al actualizar la cita:", error);
@@ -158,6 +163,22 @@ export default function DoctorAppointmentsPage() {
                             </Button>
                           </>
                         )}
+
+                        {apt.status === "confirmed" &&
+                          new Date() > apt.appointmentDate.toDate() && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                              onClick={() =>
+                                handleUpdateStatus(apt.id, "completed")
+                              }
+                            >
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              Marcar como Completada
+                            </Button>
+                          )}
+
                         {apt.status !== "pending" && (
                           <p className="text-sm text-gray-500">Sin acciones</p>
                         )}
