@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fetchDoctorsBySpecialty } from "../doctorUtils";
 import { Specialty, User } from "../types";
 import {
   CHATBOT_CONSTANTS,
