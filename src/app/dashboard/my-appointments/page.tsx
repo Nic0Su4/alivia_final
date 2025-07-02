@@ -24,6 +24,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/Chat/RatingDialog";
+import { DoctorProfileDialog } from "@/components/Chat/DoctorProfileDialog";
 
 export default function MyAppointmentsPage() {
   const user = useUserStore((state) => state.user) as User | null;
@@ -32,6 +33,10 @@ export default function MyAppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [selectedAppointmentForRating, setSelectedAppointmentForRating] =
+    useState<Appointment | null>(null);
+  const [viewingDoctorId, setViewingDoctorId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -71,6 +76,10 @@ export default function MyAppointmentsPage() {
 
   const handleCloseRatingDialog = () => {
     setSelectedAppointment(null);
+  };
+
+  const handleViewDoctor = (doctorId: string) => {
+    setViewingDoctorId(doctorId);
   };
 
   const handleRatingSubmit = async (
@@ -167,6 +176,9 @@ export default function MyAppointmentsPage() {
                             Calificar
                           </Button>
                         )}
+                        <Button onClick={() => handleViewDoctor(apt.doctorId)}>
+                          Ver doctor
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -192,6 +204,12 @@ export default function MyAppointmentsPage() {
           onSubmit={handleRatingSubmit}
         />
       )}
+
+      <DoctorProfileDialog
+        isOpen={!!viewingDoctorId}
+        onClose={() => setViewingDoctorId(null)}
+        doctorId={viewingDoctorId}
+      />
     </div>
   );
 }
