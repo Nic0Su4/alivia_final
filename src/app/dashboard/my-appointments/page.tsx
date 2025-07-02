@@ -17,6 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { getAppointmentsForUser } from "@/utils/appointmentUtils";
+import Link from "next/link";
+import { ArrowLeftIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function MyAppointmentsPage() {
   const user = useUserStore((state) => state.user) as User | null;
@@ -73,6 +76,17 @@ export default function MyAppointmentsPage() {
 
   return (
     <div className="p-8">
+      {/* Flecha para regresar */}
+      <Link
+        href="/dashboard"
+        className="flex items-center text-primary-600 hover:underline mb-4"
+      >
+        <Button className="bg-[#3cc7a7] hover:bg-[#3cc7a7]/80">
+          <ArrowLeftIcon className="w-5 h-5 mr-2" />
+          Regresar al Dashboard
+        </Button>
+      </Link>
+
       <Card>
         <CardHeader>
           <CardTitle>Mis Citas</CardTitle>
