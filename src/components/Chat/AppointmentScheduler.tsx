@@ -75,7 +75,7 @@ export const AppointmentScheduler = ({
 
   const handleBookAppointment = async (time: string) => {
     setBooking(true);
-    const appointmentDateTime = new Date(`${selectedDate}T${time}:00.000Z`);
+    const appointmentDateTime = new Date(`${selectedDate}T${time}`);
 
     try {
       const appointmentId = await createAppointment(

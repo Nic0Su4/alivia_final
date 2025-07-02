@@ -1,11 +1,17 @@
 // components/ConversationList.tsx
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PlusIcon, EditIcon, HeartPulseIcon } from "lucide-react";
+import {
+  PlusIcon,
+  EditIcon,
+  HeartPulseIcon,
+  CalendarClock,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Conversation } from "@/utils/types";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -55,7 +61,16 @@ export default function ConversationList({
           <PlusIcon className="mr-2" />
           <span className="font-bold">Nueva consulta</span>
         </Button>
-        <ScrollArea className="h-[calc(100dvh-14rem)] md:h-[calc(100dvh-10rem)] mt-4 border border-black rounded-lg">
+        <Link href="/dashboard/my-appointments" className="mt-2 block">
+          <Button
+            variant="outline"
+            className="w-full justify-center border-gray-300"
+          >
+            <CalendarClock className="mr-2 h-5 w-5" />
+            <span className="font-bold">Mis Citas</span>
+          </Button>
+        </Link>
+        <ScrollArea className="h-[calc(100dvh-16rem)] md:h-[calc(100dvh-12rem)] mt-4 border border-black rounded-lg">
           {conversations.map((conv) => (
             <div
               key={conv.id}

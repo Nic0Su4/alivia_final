@@ -11,6 +11,7 @@ import {
   Timestamp,
   limit,
   runTransaction,
+  orderBy,
 } from "firebase/firestore";
 import { Appointment, Doctor } from "./types";
 
@@ -202,5 +203,39 @@ export const checkExistingAppointment = async (
   } catch (error) {
     console.error("Error al verificar cita existente:", error);
     return false;
+  }
+};
+
+/**
+ * Obtiene todas las citas asociadas a un usuario específico.
+ * @param userId - El UID del usuario.
+ * @param appointmentLimit - El número máximo de citas a obtener.
+ * @returns Una promesa que se resuelve con un array de citas.
+ */
+export const getAppointmentsForUser = async (
+  userId: string,
+  appointmentLimit: number
+): Promise<Appointment[]> => {
+  try {
+    // 1. Creamos una consulta a la colección 'appointments'.
+    const appointmentsQuery = query(
+      collection(db, "appointments"),
+      // 2. Filtramos los documentos donde el campo 'userId' coincida con el ID proporcionado.
+      where("userId", "==", userId),
+      // 3. Ordenamos las citas por fecha de creación, de más reciente a más antigua.
+      orderBy("createdAt", "desc"),
+      // 4. Limítamos a 10 citas (puedes ajustar este número según tus necesidades).
+      limit(appointmentLimit)
+    );
+
+    // 4. Ejecutamos la consulta.
+    const snapshot = await getDocs(appointmentsQuery);
+
+    // 5. Mapeamos los resultados al tipo 'Appointment'.
+    return snapshot.docs.map((doc) => doc.data() as Appointment);
+  } catch (error) {
+    console.error("Error al obtener las citas del usuario:", error);
+    // 6. En caso de error, lanzamos una excepción para que el componente que llama pueda manejarla.
+    throw new Error("No se pudieron obtener las citas.");
   }
 };
