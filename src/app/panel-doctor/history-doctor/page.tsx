@@ -100,7 +100,6 @@ export default function DoctorPatientHistory() {
                   <TableHead>Paciente</TableHead>
                   <TableHead>Correo</TableHead>
                   <TableHead>Fecha de Registro</TableHead>
-                  <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -116,15 +115,6 @@ export default function DoctorPatientHistory() {
                           ? patient.createdAt.toLocaleDateString() // Ya es un objeto Date
                           : patient.createdAt.toDate().toLocaleDateString() // Es un Timestamp
                         : "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-[#49deb8] border-[#49deb8] hover:bg-[#e6faf5]"
-                      >
-                        Ver detalles
-                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
